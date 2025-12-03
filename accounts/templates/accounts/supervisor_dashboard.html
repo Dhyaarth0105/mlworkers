@@ -4,74 +4,99 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col">
-            <h2><i class="bi bi-speedometer2"></i> Supervisor Dashboard</h2>
-            <p class="text-muted">Welcome back, {{ user.get_full_name|default:user.username }}!</p>
+    <!-- Page Header -->
+    <div class="page-header fade-in">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2><i class="bi bi-speedometer2"></i> Supervisor Dashboard</h2>
+                <p>Welcome back, <strong>{{ user.get_full_name|default:user.username }}</strong>! Ready to mark attendance?</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'attendance:bulk_mark_attendance' %}" class="btn btn-success">
+                    <i class="bi bi-list-check"></i> Bulk Attendance
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Assigned Companies -->
     {% if assigned_companies %}
-    <div class="row mb-4">
+    <div class="row mb-4 slide-up">
         <div class="col">
-            <div class="alert alert-info d-flex align-items-center">
-                <i class="bi bi-building me-3" style="font-size: 1.5rem;"></i>
-                <div>
-                    <strong>Your Assigned Companies:</strong>
-                    {% for company in assigned_companies %}
-                    <span class="badge bg-primary ms-2">{{ company.name }}</span>
-                    {% endfor %}
+            <div class="card border-0 bg-gradient-primary text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-white bg-opacity-25 p-2">
+                                <i class="bi bi-building fs-5"></i>
+                            </div>
+                            <strong>Your Assigned Companies:</strong>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for company in assigned_companies %}
+                            <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-semibold">
+                                <i class="bi bi-building me-1"></i>{{ company.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     {% else %}
-    <div class="row mb-4">
+    <div class="row mb-4 slide-up">
         <div class="col">
-            <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                No companies assigned yet. Please contact admin to assign companies.
+            <div class="alert alert-warning d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-25 p-3">
+                    <i class="bi bi-exclamation-triangle fs-4 text-warning"></i>
+                </div>
+                <div>
+                    <strong>No companies assigned yet!</strong>
+                    <p class="mb-0 small">Please contact admin to assign companies to your account.</p>
+                </div>
             </div>
         </div>
     </div>
     {% endif %}
 
     <!-- Statistics Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6 col-md-6 slide-up stagger-1">
             <div class="card bg-success text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2">Today's Attendance</h6>
-                            <h2 class="card-title mb-0">{{ today_attendance }}</h2>
+                            <h6 class="card-subtitle mb-2 text-white-50">Today's Attendance</h6>
+                            <h2 class="card-title mb-0 display-5 fw-bold">{{ today_attendance }}</h2>
+                            <small class="text-white-50">Records marked today</small>
                         </div>
-                        <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.5;"></i>
+                        <i class="bi bi-check-circle stat-icon"></i>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'attendance:bulk_mark_attendance' %}" class="text-white text-decoration-none">
-                        Mark attendance <i class="bi bi-arrow-right"></i>
+                    <a href="{% url 'attendance:bulk_mark_attendance' %}" class="text-white text-decoration-none d-flex align-items-center gap-2">
+                        <span>Mark attendance</span> <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-lg-6 col-md-6 slide-up stagger-2">
             <div class="card bg-primary text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2">Assigned Employees</h6>
-                            <h2 class="card-title mb-0">{{ total_employees }}</h2>
+                            <h6 class="card-subtitle mb-2 text-white-50">Assigned Employees</h6>
+                            <h2 class="card-title mb-0 display-5 fw-bold">{{ total_employees }}</h2>
+                            <small class="text-white-50">Under your supervision</small>
                         </div>
-                        <i class="bi bi-people" style="font-size: 3rem; opacity: 0.5;"></i>
+                        <i class="bi bi-people stat-icon"></i>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'attendance:attendance_list' %}" class="text-white text-decoration-none">
-                        View records <i class="bi bi-arrow-right"></i>
+                    <a href="{% url 'attendance:attendance_list' %}" class="text-white text-decoration-none d-flex align-items-center gap-2">
+                        <span>View records</span> <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
@@ -79,30 +104,47 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="row mb-4">
+    <div class="row mb-4 fade-in">
         <div class="col">
             <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-lightning-charge text-warning me-2"></i>Quick Actions
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body pt-0">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <a href="{% url 'attendance:mark_attendance' %}" class="btn btn-outline-primary w-100 py-3">
-                                <i class="bi bi-check-circle fs-3 d-block mb-2"></i>
-                                Single Attendance
+                            <a href="{% url 'attendance:mark_attendance' %}" class="card text-decoration-none h-100 border-0 shadow-sm hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                                        <i class="bi bi-check-circle text-primary fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark">Single Attendance</h6>
+                                    <small class="text-muted">Mark one employee at a time</small>
+                                </div>
                             </a>
                         </div>
                         <div class="col-md-4">
-                            <a href="{% url 'attendance:bulk_mark_attendance' %}" class="btn btn-outline-success w-100 py-3">
-                                <i class="bi bi-list-check fs-3 d-block mb-2"></i>
-                                Bulk Attendance
+                            <a href="{% url 'attendance:bulk_mark_attendance' %}" class="card text-decoration-none h-100 border-0 shadow-sm hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                                        <i class="bi bi-list-check text-success fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark">Bulk Attendance</h6>
+                                    <small class="text-muted">Mark multiple employees at once</small>
+                                </div>
                             </a>
                         </div>
                         <div class="col-md-4">
-                            <a href="{% url 'attendance:attendance_list' %}" class="btn btn-outline-info w-100 py-3">
-                                <i class="bi bi-table fs-3 d-block mb-2"></i>
-                                View Records
+                            <a href="{% url 'attendance:attendance_list' %}" class="card text-decoration-none h-100 border-0 shadow-sm hover-lift">
+                                <div class="card-body text-center py-4">
+                                    <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                                        <i class="bi bi-table text-info fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark">View Records</h6>
+                                    <small class="text-muted">Check attendance history</small>
+                                </div>
                             </a>
                         </div>
                     </div>
@@ -112,60 +154,112 @@
     </div>
 
     <!-- Recent Attendance -->
-    <div class="row">
+    <div class="row slide-up">
         <div class="col">
             <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Attendance Records</h5>
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-clock-history text-info me-2"></i>Recent Attendance Records
+                    </h5>
+                    <a href="{% url 'attendance:attendance_list' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if recent_attendance %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th class="ps-4">Date</th>
                                     <th>Employee</th>
                                     <th>Company</th>
                                     <th>Status</th>
                                     <th>OT</th>
                                     <th>OT Hours</th>
-                                    <th>Time</th>
+                                    <th class="pe-4">Time</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for record in recent_attendance %}
                                 <tr>
-                                    <td>{{ record.date|date:"M d, Y" }}</td>
-                                    <td><strong>{{ record.employee.get_full_name }}</strong></td>
-                                    <td><small>{{ record.employee.company.name }}</small></td>
+                                    <td class="ps-4">
+                                        <span class="fw-semibold">{{ record.date|date:"M d, Y" }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                                <i class="bi bi-person text-primary small"></i>
+                                            </div>
+                                            <strong>{{ record.employee.get_full_name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ record.employee.company.name }}</small>
+                                    </td>
                                     <td>
                                         {% if record.status == 'PRESENT' %}
-                                        <span class="badge bg-success">Present</span>
+                                        <span class="badge bg-success rounded-pill px-3">
+                                            <i class="bi bi-check-circle me-1"></i>Present
+                                        </span>
                                         {% else %}
-                                        <span class="badge bg-danger">Absent</span>
+                                        <span class="badge bg-danger rounded-pill px-3">
+                                            <i class="bi bi-x-circle me-1"></i>Absent
+                                        </span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if record.has_ot %}
-                                        <span class="badge bg-info">Yes</span>
+                                        {% if record.ot_hours and record.ot_hours > 0 %}
+                                        <span class="badge bg-info rounded-pill px-3">
+                                            <i class="bi bi-clock me-1"></i>Yes
+                                        </span>
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ record.ot_hours|default:"-" }}</td>
-                                    <td><small class="text-muted">{{ record.marked_at|date:"h:i A" }}</small></td>
+                                    <td>
+                                        {% if record.ot_hours and record.ot_hours > 0 %}
+                                        <span class="fw-semibold text-info">{{ record.ot_hours }} hrs</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-4">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>{{ record.marked_at|date:"h:i A" }}
+                                        </small>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted text-center py-4">No attendance records yet. Start marking attendance!</p>
+                    <div class="empty-state py-5">
+                        <i class="bi bi-calendar-x"></i>
+                        <h5>No attendance records yet</h5>
+                        <p>Start marking attendance for your assigned employees!</p>
+                        <a href="{% url 'attendance:bulk_mark_attendance' %}" class="btn btn-success">
+                            <i class="bi bi-list-check me-2"></i>Mark Attendance
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -10px rgba(0,0,0,0.15) !important;
+    }
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+</style>
 {% endblock %}
