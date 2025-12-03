@@ -576,26 +576,17 @@ body::before {
 
 /* ===== FOOTER STYLES ===== */
 footer {
-    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%) !important;
-    color: var(--text-muted);
-    padding: 1.5rem 0;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 1.25rem 0;
     margin-top: auto;
-    position: relative;
-}
-
-footer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--primary-gradient);
 }
 
 footer p {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 
 /* ===== UTILITY CLASSES ===== */
