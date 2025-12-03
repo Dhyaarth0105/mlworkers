@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify OTP - Attendance System{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="auth-card animate-fade-in">
+            <!-- Logo & Header -->
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h1 class="auth-title">Enter OTP</h1>
+                <p class="auth-subtitle">We've sent a 6-digit code to<br><strong>{{ email }}</strong></p>
+            </div>
+
+            <!-- OTP Form -->
+            <form method="post" class="auth-form" id="otpForm">
+                {% csrf_token %}
+                
+                <div class="otp-container">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" required autofocus>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                    <input type="hidden" name="otp" id="otpHidden">
+                </div>
+
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            {{ error }}<br>
+                        {% endfor %}
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary btn-auth">
+                    <i class="bi bi-check-circle me-2"></i>Verify OTP
+                </button>
+            </form>
+
+            <!-- Resend OTP -->
+            <div class="auth-footer">
+                <p>Didn't receive the code?</p>
+                <a href="{% url 'accounts:resend_otp' %}" class="btn btn-link resend-btn">
+                    <i class="bi bi-arrow-repeat me-2"></i>Resend OTP
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        min-height: 100vh;
+    }
+    
+    .auth-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    
+    .auth-container {
+        width: 100%;
+        max-width: 440px;
+    }
+    
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    
+    .auth-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+    
+    .auth-logo {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 36px;
+        color: white;
+        box-shadow: 0 10px 30px -10px rgba(79, 172, 254, 0.5);
+    }
+    
+    .auth-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 12px;
+    }
+    
+    .auth-subtitle {
+        color: #6b7280;
+        font-size: 15px;
+        margin: 0;
+        line-height: 1.5;
+    }
+    
+    .auth-subtitle strong {
+        color: #1a1a2e;
+    }
+    
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+    
+    .otp-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .otp-input {
+        width: 50px;
+        height: 60px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a2e;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+    
+    .otp-input:focus {
+        border-color: #4facfe;
+        box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.2);
+    }
+    
+    .otp-input.filled {
+        border-color: #10b981;
+        background-color: #ecfdf5;
+    }
+    
+    .btn-auth {
+        height: 56px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-auth:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px -10px rgba(79, 172, 254, 0.5);
+    }
+    
+    .auth-footer {
+        text-align: center;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .auth-footer p {
+        color: #6b7280;
+        margin: 0 0 8px;
+    }
+    
+    .resend-btn {
+        color: #4facfe;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    
+    .resend-btn:hover {
+        color: #00f2fe;
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .auth-card {
+            padding: 24px;
+            border-radius: 16px;
+        }
+        
+        .auth-logo {
+            width: 64px;
+            height: 64px;
+            font-size: 28px;
+        }
+        
+        .auth-title {
+            font-size: 24px;
+        }
+        
+        .otp-input {
+            width: 44px;
+            height: 52px;
+            font-size: 20px;
+        }
+        
+        .otp-container {
+            gap: 6px;
+        }
+    }
+</style>
+{% endblock extra_css %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const otpInputs = document.querySelectorAll('.otp-input:not([type="hidden"])');
+    const otpHidden = document.getElementById('otpHidden');
+    const form = document.getElementById('otpForm');
+    
+    otpInputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+            // Only allow digits
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            if (this.value.length === 1) {
+                this.classList.add('filled');
+                // Move to next input
+                if (index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            } else {
+                this.classList.remove('filled');
+            }
+            
+            // Update hidden field
+            updateHiddenOTP();
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            // Handle backspace
+            if (e.key === 'Backspace' && !this.value && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+        
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+            
+            pastedData.split('').forEach((char, i) => {
+                if (otpInputs[i]) {
+                    otpInputs[i].value = char;
+                    otpInputs[i].classList.add('filled');
+                }
+            });
+            
+            updateHiddenOTP();
+            
+            // Focus on the next empty input or the last one
+            const nextEmpty = Array.from(otpInputs).findIndex(inp => !inp.value);
+            if (nextEmpty !== -1) {
+                otpInputs[nextEmpty].focus();
+            } else {
+                otpInputs[otpInputs.length - 1].focus();
+            }
+        });
+    });
+    
+    function updateHiddenOTP() {
+        otpHidden.value = Array.from(otpInputs).map(inp => inp.value).join('');
+    }
+    
+    form.addEventListener('submit', function(e) {
+        updateHiddenOTP();
+        if (otpHidden.value.length !== 6) {
+            e.preventDefault();
+            alert('Please enter the complete 6-digit OTP');
+        }
+    });
+});
+</script>
+{% endblock extra_js %}
+

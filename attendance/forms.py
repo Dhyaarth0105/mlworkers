@@ -1,0 +1,121 @@
+from django import forms
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, Row, Column, Field
+from .models import Attendance
+
+
+class AttendanceForm(forms.ModelForm):
+    """Form for marking single attendance"""
+    
+    class Meta:
+        model = Attendance
+        fields = ['employee', 'date', 'status', 'has_ot', 'ot_hours', 'remarks']
+        widgets = {
+            'employee': forms.Select(attrs={'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'has_ot': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'ot_hours': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'step': '0.5', 
+                'placeholder': 'OT Hours',
+                'min': '0'
+            }),
+            'remarks': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 2, 
+                'placeholder': 'Remarks (Optional)'
+            }),
+        }
+    
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from employees.models import Employee
+        
+        # Filter employees based on user role
+        if user and user.is_supervisor():
+            self.fields['employee'].queryset = user.get_assigned_employees()
+        else:
+            self.fields['employee'].queryset = Employee.objects.filter(is_active=True)
+        
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Row(
+                Column(Field('employee'), css_class='col-md-6'),
+                Column(Field('date'), css_class='col-md-6'),
+            ),
+            Row(
+                Column(Field('status'), css_class='col-md-4'),
+                Column(Field('has_ot'), css_class='col-md-4'),
+                Column(Field('ot_hours'), css_class='col-md-4'),
+            ),
+            Field('remarks'),
+            Submit('submit', 'Mark Attendance', css_class='btn btn-primary mt-3')
+        )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        has_ot = cleaned_data.get('has_ot')
+        ot_hours = cleaned_data.get('ot_hours')
+        
+        if has_ot and (not ot_hours or ot_hours <= 0):
+            raise forms.ValidationError('Please enter OT hours when overtime is selected.')
+        
+        return cleaned_data
+
+
+class BulkAttendanceForm(forms.Form):
+    """Form for selecting date and company for bulk attendance"""
+    
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    company = forms.ModelChoiceField(
+        queryset=None,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label='-- Select Company --'
+    )
+    
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from companies.models import Company
+        
+        if user and user.is_supervisor():
+            self.fields['company'].queryset = user.assigned_companies.all()
+        else:
+            self.fields['company'].queryset = Company.objects.all()
+
+
+class AttendanceReportFilterForm(forms.Form):
+    """Form for filtering attendance reports"""
+    
+    from_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    to_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    company = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label='All Companies'
+    )
+    employee = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label='All Employees'
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from companies.models import Company
+        from employees.models import Employee
+        
+        self.fields['company'].queryset = Company.objects.all()
+        self.fields['employee'].queryset = Employee.objects.filter(is_active=True)

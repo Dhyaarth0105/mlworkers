@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-building"></i> Companies</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'companies:company_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Company
+            </a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Search companies..." value="{{ query }}">
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Companies List -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    {% if companies %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Email</th>
+                                    <th>Employees</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for company in companies %}
+                                <tr>
+                                    <td><strong>{{ company.name }}</strong></td>
+                                    <td>{{ company.contact_number }}</td>
+                                    <td>{{ company.email }}</td>
+                                    <td><span class="badge bg-info">{{ company.get_employee_count }}</span></td>
+                                    <td>{{ company.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'companies:company_detail' company.pk %}"
+                                            class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'companies:company_update' company.pk %}"
+                                            class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'companies:company_delete' company.pk %}"
+                                            class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-5">No companies found. <a
+                            href="{% url 'companies:company_create' %}">Add one now</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

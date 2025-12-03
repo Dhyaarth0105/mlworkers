@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign Up - Attendance System{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="auth-card animate-fade-in">
+            <!-- Logo & Header -->
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="bi bi-person-plus-fill"></i>
+                </div>
+                <h1 class="auth-title">Create Account</h1>
+                <p class="auth-subtitle">Join the Attendance System</p>
+            </div>
+
+            <!-- Signup Form -->
+            <form method="post" class="auth-form" id="signupForm">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="form-floating">
+                            {{ form.first_name }}
+                            <label for="id_first_name"><i class="bi bi-person me-2"></i>First Name</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-floating">
+                            {{ form.last_name }}
+                            <label for="id_last_name"><i class="bi bi-person me-2"></i>Last Name</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-floating">
+                    {{ form.email }}
+                    <label for="id_email"><i class="bi bi-envelope me-2"></i>Email Address</label>
+                </div>
+
+                <div class="form-floating">
+                    {{ form.mobile }}
+                    <label for="id_mobile"><i class="bi bi-phone me-2"></i>Mobile Number</label>
+                </div>
+
+                <div class="form-floating">
+                    {{ form.password }}
+                    <label for="id_password"><i class="bi bi-lock me-2"></i>Password</label>
+                </div>
+
+                <div class="form-floating">
+                    {{ form.confirm_password }}
+                    <label for="id_confirm_password"><i class="bi bi-lock-fill me-2"></i>Confirm Password</label>
+                </div>
+
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            {{ error }}<br>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        {{ error }}<br>
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary btn-auth">
+                    <i class="bi bi-person-plus me-2"></i>Create Account
+                </button>
+            </form>
+
+            <!-- Login Link -->
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{% url 'accounts:login' %}">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+    
+    .auth-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    
+    .auth-container {
+        width: 100%;
+        max-width: 480px;
+    }
+    
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    
+    .auth-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+    
+    .auth-logo {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 36px;
+        color: white;
+        box-shadow: 0 10px 30px -10px rgba(102, 126, 234, 0.5);
+    }
+    
+    .auth-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 8px;
+    }
+    
+    .auth-subtitle {
+        color: #6b7280;
+        font-size: 15px;
+        margin: 0;
+    }
+    
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .form-floating {
+        position: relative;
+    }
+    
+    .form-floating .form-control {
+        height: 58px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 16px;
+        padding: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-floating label {
+        color: #9ca3af;
+        padding: 16px;
+    }
+    
+    .btn-auth {
+        height: 56px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        margin-top: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-auth:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px -10px rgba(102, 126, 234, 0.5);
+    }
+    
+    .auth-footer {
+        text-align: center;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .auth-footer p {
+        color: #6b7280;
+        margin: 0;
+    }
+    
+    .auth-footer a {
+        color: #667eea;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Responsive */
+    @media (max-width: 576px) {
+        .auth-card {
+            padding: 24px;
+            border-radius: 16px;
+        }
+        
+        .auth-logo {
+            width: 64px;
+            height: 64px;
+            font-size: 28px;
+        }
+        
+        .auth-title {
+            font-size: 24px;
+        }
+        
+        .row.g-3 {
+            --bs-gutter-x: 0.75rem;
+        }
+    }
+</style>
+{% endblock extra_css %}
+

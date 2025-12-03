@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load attendance_tags %}
+
+{% block title %}Mark Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-list-check"></i> Mark Attendance</h2>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Company</label>
+                    <select name="company" class="form-select">
+                        <option value="">-- Select Company --</option>
+                        {% for company in available_companies %}
+                        <option value="{{ company.id }}" {% if selected_company == company.id|stringformat:"s" %}selected{% endif %}>
+                            {{ company.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Load
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if employees and selected_company %}
+    <!-- Attendance Form -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="date" value="{{ selected_date }}">
+        <input type="hidden" name="company" value="{{ selected_company }}">
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-people"></i> Employees - {{ selected_date }}
+                </h5>
+                <span class="badge bg-light text-dark">{{ employees|length }} employees</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;">#</th>
+                                <th>Employee</th>
+                                <th>Company</th>
+                                <th style="width: 120px;">Status</th>
+                                <th style="width: 80px;" class="text-center">OT?</th>
+                                <th style="width: 100px;">OT Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            {% with att=existing_attendance|get_item:employee.id %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ employee.get_full_name }}</strong>
+                                    <br><small class="text-muted">{{ employee.employee_code }}</small>
+                                </td>
+                                <td>{{ employee.company.name }}</td>
+                                <td>
+                                    <select name="status_{{ employee.id }}" class="form-select form-select-sm status-select" data-employee="{{ employee.id }}">
+                                        <option value="">--</option>
+                                        <option value="PRESENT" {% if att and att.status == 'PRESENT' %}selected{% endif %}>Present</option>
+                                        <option value="ABSENT" {% if att and att.status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check d-flex justify-content-center">
+                                        <input type="checkbox" 
+                                               name="has_ot_{{ employee.id }}" 
+                                               class="form-check-input ot-checkbox" 
+                                               data-employee="{{ employee.id }}"
+                                               {% if att and att.has_ot %}checked{% endif %}>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" 
+                                           name="ot_hours_{{ employee.id }}" 
+                                           class="form-control form-control-sm ot-hours" 
+                                           data-employee="{{ employee.id }}"
+                                           step="0.5" 
+                                           min="0" 
+                                           placeholder="0"
+                                           value="{% if att and att.has_ot %}{{ att.ot_hours }}{% endif %}"
+                                           {% if not att or not att.has_ot %}disabled{% endif %}>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="markAllPresent()">
+                            <i class="bi bi-check-all"></i> Mark All Present
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="markAllAbsent()">
+                            <i class="bi bi-x-circle"></i> Mark All Absent
+                        </button>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save"></i> Save Attendance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% elif not selected_company %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Please select a company to load employees.
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No employees found for the selected company.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enable/disable OT hours based on checkbox
+document.querySelectorAll('.ot-checkbox').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+        const employeeId = this.dataset.employee;
+        const otHoursInput = document.querySelector(`.ot-hours[data-employee="${employeeId}"]`);
+        otHoursInput.disabled = !this.checked;
+        if (!this.checked) {
+            otHoursInput.value = '';
+        }
+    });
+});
+
+function markAllPresent() {
+    document.querySelectorAll('.status-select').forEach(function(select) {
+        select.value = 'PRESENT';
+    });
+}
+
+function markAllAbsent() {
+    document.querySelectorAll('.status-select').forEach(function(select) {
+        select.value = 'ABSENT';
+    });
+    // Uncheck all OT checkboxes
+    document.querySelectorAll('.ot-checkbox').forEach(function(checkbox) {
+        checkbox.checked = false;
+        const employeeId = checkbox.dataset.employee;
+        document.querySelector(`.ot-hours[data-employee="${employeeId}"]`).disabled = true;
+    });
+}
+</script>
+{% endblock %}

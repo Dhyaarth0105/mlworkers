@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-people-fill"></i> User Management</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add User
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <form method="get" class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Search users..." value="{{ search_query|default:'' }}">
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+        <div class="col-md-3">
+            <select name="role" class="form-select" onchange="window.location.href='?role=' + this.value">
+                <option value="">All Roles</option>
+                <option value="ADMIN" {% if selected_role == 'ADMIN' %}selected{% endif %}>Admin</option>
+                <option value="SUPERVISOR" {% if selected_role == 'SUPERVISOR' %}selected{% endif %}>Supervisor</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if users %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Mobile</th>
+                            <th>Role</th>
+                            <th>Assigned Companies</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.mobile|default:'-' }}</td>
+                            <td>
+                                {% if user.role == 'ADMIN' %}
+                                <span class="badge bg-danger">Admin</span>
+                                {% else %}
+                                <span class="badge bg-info">Supervisor</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.role == 'SUPERVISOR' %}
+                                    {% if user.assigned_companies.exists %}
+                                        {% for company in user.assigned_companies.all %}
+                                        <span class="badge bg-secondary me-1">{{ company.name }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">None assigned</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">All (Admin)</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'accounts:user_edit' user.pk %}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if user != request.user %}
+                                <a href="{% url 'accounts:user_delete' user.pk %}" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-5">No users found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
