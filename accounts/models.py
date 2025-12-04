@@ -28,6 +28,13 @@ class User(AbstractUser):
         help_text='Companies this supervisor can manage attendance for'
     )
     
+    # Permission to mark attendance for past dates (admin grants this)
+    allowed_past_date = models.DateField(
+        null=True, 
+        blank=True,
+        help_text='Specific past date supervisor is allowed to mark attendance for'
+    )
+    
     class Meta:
         db_table = 'users'
         verbose_name = 'User'

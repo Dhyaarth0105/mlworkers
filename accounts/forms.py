@@ -201,7 +201,7 @@ class UserManagementForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'mobile', 'role', 'assigned_companies', 'is_active']
+        fields = ['first_name', 'last_name', 'email', 'mobile', 'role', 'assigned_companies', 'allowed_past_date', 'is_active']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
@@ -212,6 +212,10 @@ class UserManagementForm(forms.ModelForm):
                 'class': 'form-control',
                 'size': '5'
             }),
+            'allowed_past_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
@@ -219,6 +223,8 @@ class UserManagementForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['assigned_companies'].required = False
         self.fields['assigned_companies'].help_text = 'Hold Ctrl/Cmd to select multiple companies (for Supervisors)'
+        self.fields['allowed_past_date'].required = False
+        self.fields['allowed_past_date'].help_text = 'Allow supervisor to mark attendance for this specific past date (optional)'
         
         # Make password required for new users
         if not self.instance.pk:

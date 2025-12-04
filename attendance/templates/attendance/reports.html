@@ -63,7 +63,7 @@
 
     <!-- Summary Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <h6 class="card-title">Total Records</h6>
@@ -71,7 +71,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h6 class="card-title">Present Days</h6>
@@ -79,19 +79,11 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card bg-danger text-white">
                 <div class="card-body">
                     <h6 class="card-title">Absent Days</h6>
                     <h2 class="mb-0">{{ absent_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h6 class="card-title">OT Days</h6>
-                    <h2 class="mb-0">{{ ot_count }}</h2>
                 </div>
             </div>
         </div>
@@ -142,7 +134,6 @@
                             <th>Company</th>
                             <th>Status</th>
                             <th>OT</th>
-                            <th>OT Hrs</th>
                             <th class="text-end">Day Rate</th>
                             <th class="text-end">Day Salary</th>
                             <th class="text-end">OT Rate</th>
@@ -168,10 +159,9 @@
                                 {% if item.record.has_ot %}
                                 <span class="badge bg-info">Yes</span>
                                 {% else %}
-                                <span class="text-muted">-</span>
+                                <span class="text-muted">No</span>
                                 {% endif %}
                             </td>
-                            <td>{{ item.record.ot_hours|default:"-" }}</td>
                             <td class="text-end">₹{{ item.record.employee.salary_per_day }}</td>
                             <td class="text-end text-success fw-bold">₹{{ item.day_salary|floatformat:2 }}</td>
                             <td class="text-end">₹{{ item.record.employee.ot_per_hour }}/hr</td>
@@ -182,7 +172,7 @@
                     </tbody>
                     <tfoot class="table-light fw-bold">
                         <tr>
-                            <td colspan="8" class="text-end">TOTALS:</td>
+                            <td colspan="7" class="text-end">TOTALS:</td>
                             <td class="text-end text-success">₹{{ total_salary|floatformat:2 }}</td>
                             <td></td>
                             <td class="text-end text-info">₹{{ total_ot|floatformat:2 }}</td>

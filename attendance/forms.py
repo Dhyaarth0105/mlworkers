@@ -2,6 +2,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, Field
 from .models import Attendance
+from datetime import date
 
 
 class AttendanceForm(forms.ModelForm):
@@ -18,7 +19,7 @@ class AttendanceForm(forms.ModelForm):
             'ot_hours': forms.NumberInput(attrs={
                 'class': 'form-control', 
                 'step': '0.5', 
-                'placeholder': 'OT Hours',
+                'placeholder': 'OT Hours (Optional)',
                 'min': '0'
             }),
             'remarks': forms.Textarea(attrs={
@@ -31,6 +32,11 @@ class AttendanceForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         from employees.models import Employee
+        
+        self.user = user
+        
+        # Make OT hours not required
+        self.fields['ot_hours'].required = False
         
         # Filter employees based on user role
         if user and user.is_supervisor():
@@ -54,13 +60,37 @@ class AttendanceForm(forms.ModelForm):
             Submit('submit', 'Mark Attendance', css_class='btn btn-primary mt-3')
         )
     
+    def clean_date(self):
+        """Validate date - supervisors can only mark today unless given permission"""
+        selected_date = self.cleaned_data.get('date')
+        today = date.today()
+        
+        if self.user and self.user.is_supervisor():
+            # Check if it's today
+            if selected_date == today:
+                return selected_date
+            
+            # Check if admin has granted permission for this specific date
+            if self.user.allowed_past_date == selected_date:
+                return selected_date
+            
+            # Otherwise, restrict to today only
+            raise forms.ValidationError(
+                f'You can only mark attendance for today ({today.strftime("%d-%m-%Y")}). '
+                'Contact admin for permission to mark attendance for past dates.'
+            )
+        
+        return selected_date
+    
     def clean(self):
         cleaned_data = super().clean()
         has_ot = cleaned_data.get('has_ot')
         ot_hours = cleaned_data.get('ot_hours')
         
-        if has_ot and (not ot_hours or ot_hours <= 0):
-            raise forms.ValidationError('Please enter OT hours when overtime is selected.')
+        # OT hours is optional now - no validation needed
+        # If has_ot is checked but no hours, just set default
+        if has_ot and not ot_hours:
+            cleaned_data['ot_hours'] = 0
         
         return cleaned_data
 
@@ -82,10 +112,34 @@ class BulkAttendanceForm(forms.Form):
         super().__init__(*args, **kwargs)
         from companies.models import Company
         
+        self.user = user
+        
         if user and user.is_supervisor():
             self.fields['company'].queryset = user.assigned_companies.all()
         else:
             self.fields['company'].queryset = Company.objects.all()
+    
+    def clean_date(self):
+        """Validate date - supervisors can only mark today unless given permission"""
+        selected_date = self.cleaned_data.get('date')
+        today = date.today()
+        
+        if self.user and self.user.is_supervisor():
+            # Check if it's today
+            if selected_date == today:
+                return selected_date
+            
+            # Check if admin has granted permission for this specific date
+            if self.user.allowed_past_date == selected_date:
+                return selected_date
+            
+            # Otherwise, restrict to today only
+            raise forms.ValidationError(
+                f'You can only mark attendance for today ({today.strftime("%d-%m-%Y")}). '
+                'Contact admin for permission to mark attendance for past dates.'
+            )
+        
+        return selected_date
 
 
 class AttendanceReportFilterForm(forms.Form):

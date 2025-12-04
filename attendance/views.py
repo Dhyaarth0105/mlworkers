@@ -53,7 +53,23 @@ def mark_attendance(request):
 @login_required
 def bulk_mark_attendance(request):
     """Bulk attendance marking interface - Main supervisor screen"""
-    selected_date = request.GET.get('date', str(date.today()))
+    today = date.today()
+    
+    # For supervisors, default to today and validate date
+    if request.user.is_supervisor():
+        selected_date = request.GET.get('date', str(today))
+        try:
+            selected_date_obj = datetime.strptime(selected_date, '%Y-%m-%d').date()
+            # Only allow today or admin-approved date
+            if selected_date_obj != today:
+                if request.user.allowed_past_date != selected_date_obj:
+                    messages.warning(request, f'You can only mark attendance for today ({today.strftime("%d-%m-%Y")}). Contact admin for permission.')
+                    selected_date = str(today)
+        except:
+            selected_date = str(today)
+    else:
+        selected_date = request.GET.get('date', str(today))
+    
     company_id = request.GET.get('company', '')
     
     # Get companies based on user role
@@ -81,6 +97,18 @@ def bulk_mark_attendance(request):
     if request.method == 'POST':
         selected_date = request.POST.get('date')
         company_id = request.POST.get('company')
+        
+        # Validate date for supervisors
+        if request.user.is_supervisor():
+            try:
+                selected_date_obj = datetime.strptime(selected_date, '%Y-%m-%d').date()
+                if selected_date_obj != today and request.user.allowed_past_date != selected_date_obj:
+                    messages.error(request, f'You can only mark attendance for today ({today.strftime("%d-%m-%Y")}). Contact admin for permission.')
+                    return redirect('attendance:bulk_mark_attendance')
+            except:
+                messages.error(request, 'Invalid date.')
+                return redirect('attendance:bulk_mark_attendance')
+        
         count = 0
         
         # Re-filter employees for the POST
