@@ -54,14 +54,15 @@ CACHES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
 
-# Template caching
-TEMPLATES[0]['OPTIONS']['loaders'] = [
-    ('django.template.loaders.cached.Loader', [
-        'django.template.loaders.filesystem.Loader',
-        'django.template.loaders.app_directories.Loader',
-    ]),
-]
-del TEMPLATES[0]['APP_DIRS']
+# Template caching - only apply if APP_DIRS exists
+if 'APP_DIRS' in TEMPLATES[0]:
+    TEMPLATES[0]['OPTIONS']['loaders'] = [
+        ('django.template.loaders.cached.Loader', [
+            'django.template.loaders.filesystem.Loader',
+            'django.template.loaders.app_directories.Loader',
+        ]),
+    ]
+    del TEMPLATES[0]['APP_DIRS']
 
 # Logging - minimal for production
 LOGGING = {

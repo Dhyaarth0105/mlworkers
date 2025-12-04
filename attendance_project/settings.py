@@ -176,7 +176,7 @@ CACHES = {
 }
 
 # Template caching (for production)
-if not DEBUG:
+if not DEBUG and 'APP_DIRS' in TEMPLATES[0]:
     TEMPLATES[0]['OPTIONS']['loaders'] = [
         ('django.template.loaders.cached.Loader', [
             'django.template.loaders.filesystem.Loader',
