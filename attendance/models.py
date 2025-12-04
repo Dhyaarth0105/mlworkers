@@ -45,6 +45,13 @@ class Attendance(models.Model):
         verbose_name_plural = 'Attendance Records'
         ordering = ['-date', 'employee']
         unique_together = ['employee', 'date']
+        indexes = [
+            models.Index(fields=['date']),
+            models.Index(fields=['employee', 'date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['marked_by']),
+            models.Index(fields=['-date', 'employee']),
+        ]
     
     def __str__(self):
         ot_str = " + OT" if self.has_ot else ""

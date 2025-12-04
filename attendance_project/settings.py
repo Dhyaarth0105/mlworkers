@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',  # Compress responses
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -66,7 +67,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'attendance_project.wsgi.application'
 
-# Database - PostgreSQL
+# Database - PostgreSQL with optimizations
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -75,6 +76,11 @@ DATABASES = {
         'PASSWORD': 'root@123',
         'HOST': 'localhost',
         'PORT': '5432',
+        'CONN_MAX_AGE': 60,  # Persistent connections
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': {
+            'connect_timeout': 10,
+        }
     }
 }
 
@@ -146,3 +152,54 @@ DEFAULT_FROM_EMAIL = 'Attendance System <purohitparth1@gmail.com>'
 
 # OTP Settings
 OTP_EXPIRY_MINUTES = 10
+
+# ============================================
+# PERFORMANCE OPTIMIZATIONS
+# ============================================
+
+# Database connection pooling
+CONN_MAX_AGE = 60  # Keep connections alive for 60 seconds
+
+# Session optimization - use database-backed sessions with caching
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
+# Cache configuration - use local memory cache for development
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000
+        }
+    }
+}
+
+# Template caching (for production)
+if not DEBUG:
+    TEMPLATES[0]['OPTIONS']['loaders'] = [
+        ('django.template.loaders.cached.Loader', [
+            'django.template.loaders.filesystem.Loader',
+            'django.template.loaders.app_directories.Loader',
+        ]),
+    ]
+    del TEMPLATES[0]['APP_DIRS']
+
+# Logging optimization - reduce logging in production
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+}
+
+# Data upload optimization
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB

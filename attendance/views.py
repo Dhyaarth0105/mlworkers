@@ -78,8 +78,11 @@ def bulk_mark_attendance(request):
     else:
         available_companies = Company.objects.all()
     
-    # Get employees based on selected company and user access
-    employees = Employee.objects.filter(is_active=True).select_related('company')
+    # Get employees based on selected company and user access - OPTIMIZED
+    employees = Employee.objects.filter(is_active=True).select_related('company').only(
+        'id', 'employee_code', 'first_name', 'last_name', 'designation',
+        'salary_per_day', 'ot_per_hour', 'company__id', 'company__name'
+    )
     
     if request.user.is_supervisor():
         employees = employees.filter(company__in=available_companies)

@@ -248,23 +248,28 @@ def dashboard(request):
 
 @login_required
 def admin_dashboard(request):
-    """Admin dashboard with statistics"""
+    """Admin dashboard with statistics - OPTIMIZED"""
     from companies.models import Company
     from employees.models import Employee
     from attendance.models import Attendance
     from django.db.models import Count, Q
     from datetime import date
     
-    # Get statistics
+    # Get statistics with single optimized query
     total_companies = Company.objects.count()
     total_employees = Employee.objects.filter(is_active=True).count()
     today_attendance = Attendance.objects.filter(date=date.today()).count()
     
-    # Recent companies
-    recent_companies = Company.objects.order_by('-created_at')[:5]
+    # Recent companies - use only() to fetch only needed fields
+    recent_companies = Company.objects.only(
+        'id', 'name', 'email', 'created_at'
+    ).order_by('-created_at')[:5]
     
-    # Recent employees
-    recent_employees = Employee.objects.order_by('-created_at')[:5]
+    # Recent employees - use select_related for company
+    recent_employees = Employee.objects.select_related('company').only(
+        'id', 'first_name', 'last_name', 'employee_code', 'created_at',
+        'company__id', 'company__name'
+    ).order_by('-created_at')[:5]
     
     context = {
         'total_companies': total_companies,
@@ -317,8 +322,11 @@ def supervisor_dashboard(request):
 @login_required
 @admin_required
 def user_list(request):
-    """List all users"""
-    users = User.objects.all().order_by('-date_joined')
+    """List all users - OPTIMIZED"""
+    users = User.objects.prefetch_related('assigned_companies').only(
+        'id', 'username', 'email', 'first_name', 'last_name', 
+        'role', 'mobile', 'is_active', 'date_joined'
+    ).order_by('-date_joined')
     
     # Filter by role
     role = request.GET.get('role')

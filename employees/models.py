@@ -56,6 +56,12 @@ class Employee(models.Model):
         verbose_name = 'Employee'
         verbose_name_plural = 'Employees'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['employee_code']),
+            models.Index(fields=['company', 'is_active']),
+        ]
     
     def __str__(self):
         return f"{self.employee_code} - {self.get_full_name()}"
