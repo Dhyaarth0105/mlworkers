@@ -88,6 +88,25 @@
                         </div>
 
                         <hr class="my-4">
+                        <h5 class="mb-3"><i class="bi bi-calendar-event"></i> Past Date Permission (for Supervisors)</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Allowed Past Date</label>
+                            {{ form.allowed_past_date }}
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-info-circle"></i> {{ form.allowed_past_date.help_text }}
+                            </small>
+                            {% if form.allowed_past_date.errors %}
+                            <div class="text-danger small">{{ form.allowed_past_date.errors.0 }}</div>
+                            {% endif %}
+                            <div class="alert alert-info mt-2 small">
+                                <i class="bi bi-lightbulb"></i> <strong>How it works:</strong> Supervisors can only mark attendance for today. 
+                                If you need a supervisor to mark attendance for a past date, set that specific date here. 
+                                After the supervisor marks attendance for that date, you can clear this field.
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
                         <h5 class="mb-3"><i class="bi bi-key"></i> Password</h5>
 
                         <div class="row mb-3">
