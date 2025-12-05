@@ -5,7 +5,7 @@ Optimized for high performance
 from .settings import *
 
 DEBUG = False
-ALLOWED_HOSTS = ['145.223.22.228', 'localhost', 'mlworkers.com', 'www.mlworkers.com', 'attendance.dhyaarthtechnology.com', 'mlworkers.dhyaarthtechnology.com']
+ALLOWED_HOSTS = ['145.223.22.228', 'localhost', 'mlworkers.com', 'www.mlworkers.com']
 
 # Database with connection pooling
 DATABASES = {
