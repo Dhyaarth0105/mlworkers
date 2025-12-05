@@ -15,9 +15,8 @@
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label">Start Date</label>
+                    <label class="form-label">Start Date <small class="text-muted">(Max 3 months)</small></label>
                     <input type="date" name="start_date" class="form-control" value="{{ start_date }}" min="{{ min_allowed_date }}">
-                    <small class="text-muted">Max 3 months back</small>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">End Date</label>
