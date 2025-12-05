@@ -140,15 +140,15 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-# Email Configuration (Gmail SMTP)
-EMAIL_BACKEND = 'accounts.email_backend.CustomEmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+# Email Configuration (Zoho SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.zoho.com'
 EMAIL_PORT = 587
 EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'purohitparth1@gmail.com'
-EMAIL_HOST_PASSWORD = 'vqgz yrtw xihj evcz'
-DEFAULT_FROM_EMAIL = 'Attendance System <purohitparth1@gmail.com>'
+EMAIL_HOST_USER = 'dev@mlworkers.com'
+EMAIL_HOST_PASSWORD = 'JtZhV8902kBf'
+DEFAULT_FROM_EMAIL = 'ML Workers <dev@mlworkers.com>'
 
 # OTP Settings
 OTP_EXPIRY_MINUTES = 10
