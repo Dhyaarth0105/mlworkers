@@ -141,11 +141,11 @@ MESSAGE_TAGS = {
 }
 
 # Email Configuration (Zoho SMTP)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.zoho.com'
-EMAIL_PORT = 587
-EMAIL_USE_SSL = False
-EMAIL_USE_TLS = True
+EMAIL_BACKEND = 'accounts.email_backend.CustomEmailBackend'
+EMAIL_HOST = 'smtp.zoho.in'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
 EMAIL_HOST_USER = 'dev@mlworkers.com'
 EMAIL_HOST_PASSWORD = 'JtZhV8902kBf'
 DEFAULT_FROM_EMAIL = 'ML Workers <dev@mlworkers.com>'
