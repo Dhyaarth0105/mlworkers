@@ -5,6 +5,7 @@ from django.db.models import Q, Count, Sum, F, DecimalField
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse, HttpResponse
 from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from accounts.decorators import admin_required
 from .models import Attendance
@@ -12,6 +13,41 @@ from .forms import AttendanceForm, BulkAttendanceForm, AttendanceReportFilterFor
 from employees.models import Employee
 from companies.models import Company
 import csv
+
+
+def get_min_allowed_date():
+    """Get minimum allowed date (3 months ago from today)"""
+    return date.today() - relativedelta(months=3)
+
+
+def validate_date_range(from_date_str, to_date_str):
+    """Validate and enforce 3-month date restriction"""
+    min_date = get_min_allowed_date()
+    today = date.today()
+    
+    # Parse and validate from_date
+    if from_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+            if from_date < min_date:
+                from_date = min_date
+        except:
+            from_date = min_date
+    else:
+        from_date = today.replace(day=1)
+    
+    # Parse and validate to_date
+    if to_date_str:
+        try:
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+            if to_date > today:
+                to_date = today
+        except:
+            to_date = today
+    else:
+        to_date = today
+    
+    return from_date.strftime('%Y-%m-%d'), to_date.strftime('%Y-%m-%d')
 
 
 @login_required
@@ -169,17 +205,24 @@ def bulk_mark_attendance(request):
 @login_required
 def attendance_list(request):
     """List attendance records with filters"""
-    # Get filter parameters
-    start_date = request.GET.get('start_date', '')
-    end_date = request.GET.get('end_date', '')
+    # Get filter parameters and enforce 3-month restriction
+    start_date_raw = request.GET.get('start_date', '')
+    end_date_raw = request.GET.get('end_date', '')
+    start_date, end_date = validate_date_range(start_date_raw, end_date_raw)
+    
     employee_id = request.GET.get('employee', '')
     status = request.GET.get('status', '')
     company_id = request.GET.get('company', '')
     
-    # Base queryset
+    # Get min allowed date for template
+    min_allowed_date = get_min_allowed_date().strftime('%Y-%m-%d')
+    
+    # Base queryset - always filter by 3-month range
     attendance_records = Attendance.objects.select_related(
         'employee', 'employee__company', 'marked_by'
-    ).all()
+    ).filter(
+        date__gte=min_allowed_date
+    )
     
     # Filter by supervisor access
     if request.user.is_supervisor():
@@ -215,6 +258,7 @@ def attendance_list(request):
         'companies': companies,
         'start_date': start_date,
         'end_date': end_date,
+        'min_allowed_date': min_allowed_date,
         'selected_employee': employee_id,
         'selected_status': status,
         'selected_company': company_id,
@@ -226,17 +270,16 @@ def attendance_list(request):
 @admin_required
 def reports(request):
     """Generate attendance reports with salary calculations - Admin only"""
-    # Get filter parameters
-    from_date = request.GET.get('from_date', '')
-    to_date = request.GET.get('to_date', '')
+    # Get filter parameters and enforce 3-month restriction
+    from_date_raw = request.GET.get('from_date', '')
+    to_date_raw = request.GET.get('to_date', '')
+    from_date, to_date = validate_date_range(from_date_raw, to_date_raw)
+    
     company_id = request.GET.get('company', '')
     employee_id = request.GET.get('employee', '')
     
-    # Set default date range (current month)
-    if not from_date:
-        from_date = date.today().replace(day=1).strftime('%Y-%m-%d')
-    if not to_date:
-        to_date = date.today().strftime('%Y-%m-%d')
+    # Get min allowed date for template
+    min_allowed_date = get_min_allowed_date().strftime('%Y-%m-%d')
     
     # Base queryset
     attendance_records = Attendance.objects.select_related(
@@ -296,6 +339,7 @@ def reports(request):
         'employees': employees,
         'from_date': from_date,
         'to_date': to_date,
+        'min_allowed_date': min_allowed_date,
         'selected_company': company_id,
         'selected_employee': employee_id,
     }
@@ -306,8 +350,11 @@ def reports(request):
 @admin_required
 def export_report_csv(request):
     """Export attendance report to CSV with salary details"""
-    from_date = request.GET.get('from_date', date.today().replace(day=1).strftime('%Y-%m-%d'))
-    to_date = request.GET.get('to_date', date.today().strftime('%Y-%m-%d'))
+    # Enforce 3-month restriction
+    from_date_raw = request.GET.get('from_date', '')
+    to_date_raw = request.GET.get('to_date', '')
+    from_date, to_date = validate_date_range(from_date_raw, to_date_raw)
+    
     company_id = request.GET.get('company', '')
     employee_id = request.GET.get('employee', '')
     
@@ -375,9 +422,13 @@ def export_report_csv(request):
 @admin_required  
 def employee_wise_report(request):
     """Employee-wise summary report"""
-    from_date = request.GET.get('from_date', date.today().replace(day=1).strftime('%Y-%m-%d'))
-    to_date = request.GET.get('to_date', date.today().strftime('%Y-%m-%d'))
+    # Enforce 3-month restriction
+    from_date_raw = request.GET.get('from_date', '')
+    to_date_raw = request.GET.get('to_date', '')
+    from_date, to_date = validate_date_range(from_date_raw, to_date_raw)
+    
     company_id = request.GET.get('company', '')
+    min_allowed_date = get_min_allowed_date().strftime('%Y-%m-%d')
     
     # Get employees
     employees = Employee.objects.filter(is_active=True).select_related('company')
@@ -431,6 +482,7 @@ def employee_wise_report(request):
         'companies': companies,
         'from_date': from_date,
         'to_date': to_date,
+        'min_allowed_date': min_allowed_date,
         'selected_company': company_id,
     }
     return render(request, 'attendance/employee_wise_report.html', context)
