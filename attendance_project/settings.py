@@ -140,15 +140,15 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-# Email Configuration (Zoho SMTP)
+# Email Configuration (Zoho SMTP) - credentials from environment variables
 EMAIL_BACKEND = 'accounts.email_backend.CustomEmailBackend'
-EMAIL_HOST = 'smtp.zoho.in'
-EMAIL_PORT = 465
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.zoho.in')
+EMAIL_PORT = config('EMAIL_PORT', default=465, cast=int)
 EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
-EMAIL_HOST_USER = 'dev@mlworkers.com'
-EMAIL_HOST_PASSWORD = 'JtZhV8902kBf'
-DEFAULT_FROM_EMAIL = 'ML Workers <dev@mlworkers.com>'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='ML Workers <dev@mlworkers.com>')
 
 # OTP Settings
 OTP_EXPIRY_MINUTES = 10

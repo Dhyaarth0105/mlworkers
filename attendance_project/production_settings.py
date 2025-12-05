@@ -2,20 +2,21 @@
 Production settings for Attendance Management System
 Optimized for high performance
 """
+import os
 from .settings import *
 
 DEBUG = False
 ALLOWED_HOSTS = ['145.223.22.228', 'localhost', 'mlworkers.com', 'www.mlworkers.com']
 
-# Database with connection pooling
+# Database with connection pooling - credentials from environment variables
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'attendance_db',
-        'USER': 'attendance_user',
-        'PASSWORD': 'Att3nd@nc3_2024',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'attendance_db'),
+        'USER': os.environ.get('DB_USER', 'attendance_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
         'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
