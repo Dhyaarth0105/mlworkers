@@ -255,21 +255,41 @@ def admin_dashboard(request):
     from django.db.models import Count, Q
     from datetime import date
     
-    # Get statistics with single optimized query
-    total_companies = Company.objects.count()
-    total_employees = Employee.objects.filter(is_active=True).count()
-    today_attendance = Attendance.objects.filter(date=date.today()).count()
+    # Check if admin is mapped to specific companies
+    admin_has_company_mapping = request.user.role == 'ADMIN' and request.user.assigned_companies.exists()
     
-    # Recent companies - use only() to fetch only needed fields
-    recent_companies = Company.objects.only(
-        'id', 'name', 'email', 'created_at'
-    ).order_by('-created_at')[:5]
-    
-    # Recent employees - use select_related for company
-    recent_employees = Employee.objects.select_related('company').only(
-        'id', 'first_name', 'last_name', 'employee_code', 'created_at',
-        'company__id', 'company__name'
-    ).order_by('-created_at')[:5]
+    if admin_has_company_mapping:
+        admin_companies = request.user.assigned_companies.all()
+        total_companies = admin_companies.count()
+        total_employees = Employee.objects.filter(is_active=True, company__in=admin_companies).count()
+        today_attendance = Attendance.objects.filter(date=date.today(), employee__company__in=admin_companies).count()
+        
+        # Recent companies - only admin's companies
+        recent_companies = admin_companies.only(
+            'id', 'name', 'email', 'created_at'
+        ).order_by('-created_at')[:5]
+        
+        # Recent employees - only from admin's companies
+        recent_employees = Employee.objects.filter(company__in=admin_companies).select_related('company').only(
+            'id', 'first_name', 'last_name', 'employee_code', 'created_at',
+            'company__id', 'company__name'
+        ).order_by('-created_at')[:5]
+    else:
+        # Super Admin or Admin with no mapping sees all
+        total_companies = Company.objects.count()
+        total_employees = Employee.objects.filter(is_active=True).count()
+        today_attendance = Attendance.objects.filter(date=date.today()).count()
+        
+        # Recent companies - use only() to fetch only needed fields
+        recent_companies = Company.objects.only(
+            'id', 'name', 'email', 'created_at'
+        ).order_by('-created_at')[:5]
+        
+        # Recent employees - use select_related for company
+        recent_employees = Employee.objects.select_related('company').only(
+            'id', 'first_name', 'last_name', 'employee_code', 'created_at',
+            'company__id', 'company__name'
+        ).order_by('-created_at')[:5]
     
     context = {
         'total_companies': total_companies,
@@ -328,6 +348,16 @@ def user_list(request):
         'role', 'mobile', 'is_active', 'date_joined'
     ).order_by('-date_joined')
     
+    # If admin is mapped to specific companies, only show users from those companies
+    # Super Admin sees all, Admin with no mapping sees all, Admin with mapping sees filtered
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        # Show users who are assigned to any of the admin's companies OR have no companies assigned (for supervisors)
+        users = users.filter(
+            Q(assigned_companies__in=admin_companies) | 
+            Q(role='SUPERVISOR', assigned_companies__isnull=True)
+        ).distinct()
+    
     # Filter by role
     role = request.GET.get('role')
     if role:
@@ -355,13 +385,22 @@ def user_list(request):
 def user_create(request):
     """Create new user"""
     if request.method == 'POST':
-        form = UserManagementForm(request.POST)
+        form = UserManagementForm(request.POST, current_user=request.user)
         if form.is_valid():
+            # Check if trying to create superadmin and one already exists
+            role = form.cleaned_data.get('role')
+            if role == 'SUPERADMIN' and User.objects.filter(role='SUPERADMIN').exists():
+                messages.error(request, 'Only one Super Admin can exist in the system!')
+                return render(request, 'accounts/user_form.html', {
+                    'form': form,
+                    'title': 'Add New User',
+                    'button_text': 'Create User'
+                })
             user = form.save()
             messages.success(request, f'User "{user.get_full_name()}" created successfully!')
             return redirect('accounts:user_list')
     else:
-        form = UserManagementForm()
+        form = UserManagementForm(current_user=request.user)
     
     return render(request, 'accounts/user_form.html', {
         'form': form,
@@ -376,14 +415,30 @@ def user_edit(request, pk):
     """Edit existing user"""
     user = get_object_or_404(User, pk=pk)
     
+    # Check if current user can edit this user
+    if user.is_superadmin() and not request.user.is_superadmin():
+        messages.error(request, 'Only Super Admin can edit another Super Admin!')
+        return redirect('accounts:user_list')
+    
     if request.method == 'POST':
-        form = UserManagementForm(request.POST, instance=user)
+        form = UserManagementForm(request.POST, instance=user, current_user=request.user)
         if form.is_valid():
+            # Prevent changing superadmin role if only one exists
+            old_role = user.role
+            new_role = form.cleaned_data.get('role')
+            if old_role == 'SUPERADMIN' and new_role != 'SUPERADMIN':
+                messages.error(request, 'Cannot change the role of the only Super Admin!')
+                return render(request, 'accounts/user_form.html', {
+                    'form': form,
+                    'user_obj': user,
+                    'title': f'Edit User: {user.get_full_name()}',
+                    'button_text': 'Update User'
+                })
             form.save()
             messages.success(request, f'User "{user.get_full_name()}" updated successfully!')
             return redirect('accounts:user_list')
     else:
-        form = UserManagementForm(instance=user)
+        form = UserManagementForm(instance=user, current_user=request.user)
     
     return render(request, 'accounts/user_form.html', {
         'form': form,
@@ -399,6 +454,14 @@ def user_delete(request, pk):
     """Delete user"""
     user = get_object_or_404(User, pk=pk)
     
+    # Check if current user can delete this user
+    if not request.user.can_delete_user(user):
+        if user.is_superadmin():
+            messages.error(request, "Super Admin cannot be deleted!")
+        elif user.is_normal_admin():
+            messages.error(request, "Only Super Admin can delete an Admin user!")
+        return redirect('accounts:user_list')
+    
     if request.method == 'POST':
         if user == request.user:
             messages.error(request, "You cannot delete your own account!")
@@ -408,4 +471,7 @@ def user_delete(request, pk):
             messages.success(request, f'User "{name}" deleted successfully!')
         return redirect('accounts:user_list')
     
-    return render(request, 'accounts/user_confirm_delete.html', {'user_obj': user})
+    return render(request, 'accounts/user_confirm_delete.html', {
+        'user_obj': user,
+        'can_delete': request.user.can_delete_user(user)
+    })

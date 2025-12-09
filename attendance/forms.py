@@ -1,6 +1,6 @@
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Row, Column, Field
+from crispy_forms.layout import Layout, Submit, Row, Column, Field, HTML
 from .models import Attendance
 from datetime import date
 
@@ -10,7 +10,7 @@ class AttendanceForm(forms.ModelForm):
     
     class Meta:
         model = Attendance
-        fields = ['employee', 'date', 'status', 'has_ot', 'ot_hours', 'remarks']
+        fields = ['employee', 'date', 'status', 'has_ot', 'ot_hours', 'ot_remarks', 'remarks']
         widgets = {
             'employee': forms.Select(attrs={'class': 'form-control'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -19,8 +19,12 @@ class AttendanceForm(forms.ModelForm):
             'ot_hours': forms.NumberInput(attrs={
                 'class': 'form-control', 
                 'step': '0.5', 
-                'placeholder': 'OT Hours (Optional)',
-                'min': '0'
+                'placeholder': 'Enter OT Hours',
+                'min': '0',
+            }),
+            'ot_remarks': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'OT Remarks/Reason (Optional)'
             }),
             'remarks': forms.Textarea(attrs={
                 'class': 'form-control', 
@@ -46,16 +50,30 @@ class AttendanceForm(forms.ModelForm):
         
         self.helper = FormHelper()
         self.helper.form_method = 'post'
+        # Set OT hours to empty by default (no 0.00)
+        self.fields['ot_hours'].initial = None
+        self.fields['ot_remarks'].required = False
+        
+        # Update labels for cleaner display
+        self.fields['has_ot'].label = 'Has OT?'
+        self.fields['ot_hours'].label = 'OT Hours'
+        self.fields['ot_remarks'].label = 'OT Remarks'
+        
         self.helper.layout = Layout(
             Row(
                 Column(Field('employee'), css_class='col-md-6'),
                 Column(Field('date'), css_class='col-md-6'),
             ),
             Row(
-                Column(Field('status'), css_class='col-md-4'),
-                Column(Field('has_ot'), css_class='col-md-4'),
-                Column(Field('ot_hours'), css_class='col-md-4'),
+                Column(Field('status', css_class='status-select'), css_class='col-md-12'),
             ),
+            HTML('<div id="ot-section" style="display:none;">'),
+            Row(
+                Column(Field('has_ot'), css_class='col-md-3'),
+                Column(Field('ot_hours'), css_class='col-md-4'),
+                Column(Field('ot_remarks'), css_class='col-md-5'),
+            ),
+            HTML('</div>'),
             Field('remarks'),
             Submit('submit', 'Mark Attendance', css_class='btn btn-primary mt-3')
         )
@@ -87,10 +105,10 @@ class AttendanceForm(forms.ModelForm):
         has_ot = cleaned_data.get('has_ot')
         ot_hours = cleaned_data.get('ot_hours')
         
-        # OT hours is optional now - no validation needed
-        # If has_ot is checked but no hours, just set default
-        if has_ot and not ot_hours:
-            cleaned_data['ot_hours'] = 0
+        # OT hours is optional - user enters the value, no default
+        # Clear OT hours if no OT checkbox
+        if not has_ot:
+            cleaned_data['ot_hours'] = None
         
         return cleaned_data
 

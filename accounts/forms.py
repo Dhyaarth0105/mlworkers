@@ -12,9 +12,10 @@ phone_validator = RegexValidator(
 
 
 class LoginForm(AuthenticationForm):
-    """Custom login form with Bootstrap styling"""
+    """Custom login form with Bootstrap styling - allows username or email login"""
     
     username = forms.CharField(
+        label='Username or Email',
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg',
             'placeholder': 'Username or Email',
@@ -27,17 +28,37 @@ class LoginForm(AuthenticationForm):
             'placeholder': 'Password'
         })
     )
+    
+    def clean_username(self):
+        """Allow login with either username or email"""
+        username = self.cleaned_data.get('username')
+        # Check if it's an email and convert to username
+        if '@' in username:
+            try:
+                user = User.objects.get(email=username)
+                return user.username
+            except User.DoesNotExist:
+                pass
+        return username
 
 
 class SignupForm(forms.ModelForm):
     """User registration form"""
     
+    username = forms.CharField(
+        max_length=50,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Username',
+            'autofocus': True
+        }),
+        help_text='Choose a unique username for login'
+    )
     first_name = forms.CharField(
         max_length=50,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg',
-            'placeholder': 'First Name',
-            'autofocus': True
+            'placeholder': 'First Name'
         })
     )
     last_name = forms.CharField(
@@ -77,7 +98,13 @@ class SignupForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'mobile']
+        fields = ['username', 'first_name', 'last_name', 'email', 'mobile']
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("This username is already taken.")
+        return username
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -102,7 +129,6 @@ class SignupForm(forms.ModelForm):
     
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.username = self.cleaned_data['email']  # Use email as username
         user.set_password(self.cleaned_data['password'])
         user.role = 'SUPERVISOR'  # Default role for new users
         if commit:
@@ -201,12 +227,14 @@ class UserManagementForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'mobile', 'role', 'assigned_companies', 'allowed_past_date', 'is_active']
+        fields = ['username', 'first_name', 'last_name', 'email', 'mobile', 'whatsapp_number', 'role', 'assigned_companies', 'allowed_past_date', 'is_active']
         widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
             'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mobile Number'}),
+            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'WhatsApp Number (with country code)'}),
             'role': forms.Select(attrs={'class': 'form-control'}),
             'assigned_companies': forms.SelectMultiple(attrs={
                 'class': 'form-control',
@@ -219,17 +247,38 @@ class UserManagementForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, current_user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['assigned_companies'].required = False
-        self.fields['assigned_companies'].help_text = 'Hold Ctrl/Cmd to select multiple companies (for Supervisors)'
+        self.current_user = current_user
+        self.fields['assigned_companies'].required = False  # Validated in clean() based on role
+        self.fields['assigned_companies'].help_text = 'REQUIRED: Select at least 1 company. Hold Ctrl/Cmd to select multiple.'
         self.fields['allowed_past_date'].required = False
         self.fields['allowed_past_date'].help_text = 'Allow supervisor to mark attendance for this specific past date (optional)'
+        self.fields['whatsapp_number'].required = False
+        self.fields['whatsapp_number'].help_text = 'For attendance notifications (e.g., +919876543210)'
         
         # Make password required for new users
         if not self.instance.pk:
             self.fields['password'].required = True
             self.fields['confirm_password'].required = True
+        
+        # Restrict role choices based on current user
+        if current_user:
+            if not current_user.is_superadmin():
+                # Normal admin cannot create/edit superadmin
+                self.fields['role'].choices = [
+                    ('ADMIN', 'Admin'),
+                    ('SUPERVISOR', 'Supervisor'),
+                ]
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        qs = User.objects.filter(username=username)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("This username is already taken.")
+        return username
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -244,6 +293,8 @@ class UserManagementForm(forms.ModelForm):
         cleaned_data = super().clean()
         password = cleaned_data.get('password')
         confirm_password = cleaned_data.get('confirm_password')
+        role = cleaned_data.get('role')
+        assigned_companies = cleaned_data.get('assigned_companies')
         
         if password or confirm_password:
             if password != confirm_password:
@@ -251,11 +302,16 @@ class UserManagementForm(forms.ModelForm):
             if password and len(password) < 6:
                 raise forms.ValidationError("Password must be at least 6 characters long.")
         
+        # Company mapping is mandatory for SUPERVISOR and ADMIN roles
+        # Only SUPERADMIN doesn't need company mapping
+        if role in ['SUPERVISOR', 'ADMIN']:
+            if not assigned_companies or assigned_companies.count() == 0:
+                raise forms.ValidationError("At least one company must be assigned for Supervisor and Admin users.")
+        
         return cleaned_data
     
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.username = self.cleaned_data['email']
         
         password = self.cleaned_data.get('password')
         if password:

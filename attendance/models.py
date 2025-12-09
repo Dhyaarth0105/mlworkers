@@ -10,6 +10,7 @@ class Attendance(models.Model):
     STATUS_CHOICES = [
         ('PRESENT', 'Present'),
         ('ABSENT', 'Absent'),
+        ('HALF_DAY', 'Half Day'),
     ]
     
     employee = models.ForeignKey(
@@ -25,9 +26,11 @@ class Attendance(models.Model):
     ot_hours = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        default=Decimal('0.00'),
+        null=True,
+        blank=True,
         help_text='Number of overtime hours'
     )
+    ot_remarks = models.CharField(max_length=255, blank=True, null=True, help_text='OT remarks/reason')
     
     remarks = models.TextField(blank=True, null=True)
     marked_by = models.ForeignKey(
@@ -38,6 +41,17 @@ class Attendance(models.Model):
     )
     marked_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Track if attendance was edited
+    is_edited = models.BooleanField(default=False)
+    edited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='attendance_edited'
+    )
+    edited_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         db_table = 'attendance'
@@ -60,21 +74,26 @@ class Attendance(models.Model):
     def save(self, *args, **kwargs):
         # Clear OT hours if no OT
         if not self.has_ot:
-            self.ot_hours = Decimal('0.00')
+            self.ot_hours = None
+            self.ot_remarks = None
         super().save(*args, **kwargs)
     
     @property
     def day_salary(self):
         """Calculate day salary based on attendance"""
         if self.status == 'PRESENT':
-            return self.employee.salary_per_day
+            return self.employee.salary_per_day or Decimal('0.00')
+        elif self.status == 'HALF_DAY':
+            salary = self.employee.salary_per_day or Decimal('0.00')
+            return salary / 2
         return Decimal('0.00')
     
     @property
     def ot_amount(self):
         """Calculate OT amount"""
         if self.has_ot and self.ot_hours:
-            return self.ot_hours * self.employee.ot_per_hour
+            ot_rate = self.employee.ot_per_hour or Decimal('0.00')
+            return self.ot_hours * ot_rate
         return Decimal('0.00')
     
     @property

@@ -32,7 +32,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Company</label>
-                    <select name="company" class="form-select">
+                    <select name="company" id="company-select" class="form-select">
                         <option value="">All Companies</option>
                         {% for company in companies %}
                         <option value="{{ company.id }}" {% if selected_company == company.id|stringformat:"s" %}selected{% endif %}>
@@ -43,10 +43,10 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Employee</label>
-                    <select name="employee" class="form-select">
+                    <select name="employee" id="employee-select" class="form-select">
                         <option value="">All Employees</option>
                         {% for emp in employees %}
-                        <option value="{{ emp.id }}" {% if selected_employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ emp.id }}" data-company="{{ emp.company_id }}" {% if selected_employee == emp.id|stringformat:"s" %}selected{% endif %}>
                             {{ emp.get_full_name }} ({{ emp.employee_code }})
                         </option>
                         {% endfor %}
@@ -190,4 +190,50 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const companySelect = document.getElementById('company-select');
+    const employeeSelect = document.getElementById('employee-select');
+    
+    if (!companySelect || !employeeSelect) return;
+    
+    // Store all employee options
+    const allEmployeeOptions = Array.from(employeeSelect.options).map(option => ({
+        value: option.value,
+        text: option.text,
+        companyId: option.dataset.company || ''
+    }));
+    
+    // Filter employees based on company selection
+    function filterEmployees() {
+        const selectedCompany = companySelect.value;
+        const currentEmployee = employeeSelect.value;
+        
+        // Clear employee select
+        employeeSelect.innerHTML = '<option value="">All Employees</option>';
+        
+        // Add filtered options
+        allEmployeeOptions.forEach(option => {
+            if (option.value === '') return;
+            
+            if (!selectedCompany || option.companyId === selectedCompany) {
+                const newOption = document.createElement('option');
+                newOption.value = option.value;
+                newOption.text = option.text;
+                newOption.dataset.company = option.companyId;
+                if (option.value === currentEmployee) {
+                    newOption.selected = true;
+                }
+                employeeSelect.appendChild(newOption);
+            }
+        });
+    }
+    
+    companySelect.addEventListener('change', filterEmployees);
+    filterEmployees();
+});
+</script>
 {% endblock %}

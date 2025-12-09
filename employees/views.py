@@ -15,6 +15,15 @@ def employee_list(request):
     
     employees = Employee.objects.select_related('company').all()
     
+    # If admin is mapped to specific companies, only show employees from those companies
+    from companies.models import Company
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        employees = employees.filter(company__in=admin_companies)
+        companies = admin_companies  # Only show their companies in filter dropdown
+    else:
+        companies = Company.objects.all()
+    
     if query:
         employees = employees.filter(
             Q(employee_code__icontains=query) |
@@ -30,9 +39,6 @@ def employee_list(request):
         employees = employees.filter(is_active=True)
     elif status == 'inactive':
         employees = employees.filter(is_active=False)
-    
-    from companies.models import Company
-    companies = Company.objects.all()
     
     context = {
         'employees': employees,

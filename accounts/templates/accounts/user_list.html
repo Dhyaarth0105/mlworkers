@@ -28,6 +28,7 @@
         <div class="col-md-3">
             <select name="role" class="form-select" onchange="window.location.href='?role=' + this.value">
                 <option value="">All Roles</option>
+                <option value="SUPERADMIN" {% if selected_role == 'SUPERADMIN' %}selected{% endif %}>Super Admin</option>
                 <option value="ADMIN" {% if selected_role == 'ADMIN' %}selected{% endif %}>Admin</option>
                 <option value="SUPERVISOR" {% if selected_role == 'SUPERVISOR' %}selected{% endif %}>Supervisor</option>
             </select>
@@ -61,18 +62,22 @@
                             <td>{{ user.email }}</td>
                             <td>{{ user.mobile|default:'-' }}</td>
                             <td>
-                                {% if user.role == 'ADMIN' %}
+                                {% if user.role == 'SUPERADMIN' %}
+                                <span class="badge bg-dark">Super Admin</span>
+                                {% elif user.role == 'ADMIN' %}
                                 <span class="badge bg-danger">Admin</span>
                                 {% else %}
                                 <span class="badge bg-info">Supervisor</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if user.role == 'SUPERVISOR' %}
+                                {% if user.role == 'SUPERVISOR' or user.role == 'ADMIN' %}
                                     {% if user.assigned_companies.exists %}
                                         {% for company in user.assigned_companies.all %}
                                         <span class="badge bg-secondary me-1">{{ company.name }}</span>
                                         {% endfor %}
+                                    {% elif user.role == 'ADMIN' %}
+                                        <span class="text-muted">All (Admin)</span>
                                     {% else %}
                                         <span class="text-muted">None assigned</span>
                                     {% endif %}
@@ -89,13 +94,25 @@
                             </td>
                             <td>{{ user.date_joined|date:"M d, Y" }}</td>
                             <td>
-                                <a href="{% url 'accounts:user_edit' user.pk %}" class="btn btn-sm btn-warning">
+                                <a href="{% url 'accounts:user_edit' user.pk %}" class="btn btn-sm btn-warning" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 {% if user != request.user %}
-                                <a href="{% url 'accounts:user_delete' user.pk %}" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                    {% if user.role == 'SUPERADMIN' %}
+                                        <!-- Super Admin cannot be deleted by anyone -->
+                                        <button class="btn btn-sm btn-secondary" disabled title="Super Admin cannot be deleted">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    {% elif user.role == 'ADMIN' and request.user.role != 'SUPERADMIN' %}
+                                        <!-- Only Super Admin can delete Admin -->
+                                        <button class="btn btn-sm btn-secondary" disabled title="Only Super Admin can delete Admin">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    {% else %}
+                                        <a href="{% url 'accounts:user_delete' user.pk %}" class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                         </tr>

@@ -13,6 +13,60 @@ from .forms import AttendanceForm, BulkAttendanceForm, AttendanceReportFilterFor
 from employees.models import Employee
 from companies.models import Company
 import csv
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def send_whatsapp_notification(employee, attendance):
+    """Send WhatsApp notification to employee about their attendance"""
+    try:
+        # Get employee's WhatsApp number (from contact_number field)
+        whatsapp_number = employee.contact_number
+        if not whatsapp_number:
+            return False
+        
+        # Format the date properly
+        att_date = attendance.date
+        if isinstance(att_date, str):
+            att_date = datetime.strptime(att_date, '%Y-%m-%d').date()
+        date_str = att_date.strftime('%d-%m-%Y')
+        
+        # Format the message
+        status_text = attendance.get_status_display()
+        message = f"""*Attendance Notification*
+
+Hello {employee.get_full_name()},
+
+Your attendance has been recorded:
+- *Date:* {date_str}
+- *Status:* {status_text}
+- *Company:* {employee.company.name}
+"""
+        if attendance.has_ot:
+            message += f"- *OT Hours:* {attendance.ot_hours}\n"
+        
+        message += "\nThank you!"
+        
+        # Log the notification (actual WhatsApp API integration can be added here)
+        logger.info(f"WhatsApp notification prepared for {employee.get_full_name()} ({whatsapp_number}): {status_text}")
+        
+        # TODO: Integrate with WhatsApp Business API or Twilio
+        # For now, just log the notification
+        # Example with Twilio:
+        # from twilio.rest import Client
+        # client = Client(account_sid, auth_token)
+        # client.messages.create(
+        #     body=message,
+        #     from_='whatsapp:+14155238886',
+        #     to=f'whatsapp:{whatsapp_number}'
+        # )
+        
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send WhatsApp notification: {e}")
+        return False
 
 
 def get_min_allowed_date():
@@ -52,7 +106,13 @@ def validate_date_range(from_date_str, to_date_str):
 
 @login_required
 def mark_attendance(request):
-    """Mark attendance for employees (Supervisor view)"""
+    """Mark attendance for employees - Only Supervisor and Super Admin"""
+    
+    # Only Supervisor and Super Admin can mark attendance
+    if request.user.role == 'ADMIN':
+        messages.error(request, "Admin users do not have permission to mark attendance.")
+        return redirect('accounts:dashboard')
+    
     if request.method == 'POST':
         form = AttendanceForm(request.POST, user=request.user)
         if form.is_valid():
@@ -88,7 +148,14 @@ def mark_attendance(request):
 
 @login_required
 def bulk_mark_attendance(request):
-    """Bulk attendance marking interface - Main supervisor screen"""
+    """Bulk attendance marking interface - Only Supervisor and Super Admin"""
+    
+    # Only Supervisor and Super Admin can mark attendance
+    # Admin users cannot mark attendance
+    if request.user.role == 'ADMIN':
+        messages.error(request, "Admin users do not have permission to mark attendance. Only Supervisors and Super Admin can mark attendance.")
+        return redirect('accounts:dashboard')
+    
     today = date.today()
     
     # For supervisors, default to today and validate date
@@ -111,6 +178,8 @@ def bulk_mark_attendance(request):
     # Get companies based on user role
     if request.user.is_supervisor():
         available_companies = request.user.assigned_companies.all()
+    elif request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        available_companies = request.user.assigned_companies.all()
     else:
         available_companies = Company.objects.all()
     
@@ -121,6 +190,8 @@ def bulk_mark_attendance(request):
     )
     
     if request.user.is_supervisor():
+        employees = employees.filter(company__in=available_companies)
+    elif request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
         employees = employees.filter(company__in=available_companies)
     
     if company_id:
@@ -160,27 +231,57 @@ def bulk_mark_attendance(request):
         for employee in post_employees:
             status = request.POST.get(f'status_{employee.id}')
             has_ot = request.POST.get(f'has_ot_{employee.id}') == 'on'
-            ot_hours = request.POST.get(f'ot_hours_{employee.id}', '0')
+            ot_hours = request.POST.get(f'ot_hours_{employee.id}', '')
+            ot_remarks = request.POST.get(f'ot_remarks_{employee.id}', '')
             remarks = request.POST.get(f'remarks_{employee.id}', '')
             
             if status:
                 try:
-                    ot_hours_decimal = Decimal(ot_hours) if ot_hours and has_ot else Decimal('0.00')
+                    # Only set OT hours if has_ot is checked and value is provided
+                    ot_hours_decimal = Decimal(ot_hours) if ot_hours and has_ot else None
                 except:
-                    ot_hours_decimal = Decimal('0.00')
+                    ot_hours_decimal = None
+                
+                # Check if attendance already exists
+                existing = Attendance.objects.filter(employee=employee, date=selected_date).first()
+                
+                # Supervisors cannot edit existing attendance
+                if existing and request.user.is_supervisor() and not request.user.is_admin():
+                    continue  # Skip editing existing records for supervisors
                 
                 # Update or create attendance
-                attendance, created = Attendance.objects.update_or_create(
-                    employee=employee,
-                    date=selected_date,
-                    defaults={
-                        'status': status,
-                        'has_ot': has_ot,
-                        'ot_hours': ot_hours_decimal,
-                        'remarks': remarks,
-                        'marked_by': request.user
-                    }
-                )
+                if existing and request.user.is_admin():
+                    # Admin editing existing record
+                    existing.status = status
+                    existing.has_ot = has_ot
+                    existing.ot_hours = ot_hours_decimal
+                    existing.ot_remarks = ot_remarks
+                    existing.remarks = remarks
+                    existing.is_edited = True
+                    existing.edited_by = request.user
+                    existing.edited_at = datetime.now()
+                    existing.save()
+                    attendance = existing
+                    created = False
+                else:
+                    # Create new attendance
+                    attendance, created = Attendance.objects.update_or_create(
+                        employee=employee,
+                        date=selected_date,
+                        defaults={
+                            'status': status,
+                            'has_ot': has_ot,
+                            'ot_hours': ot_hours_decimal,
+                            'ot_remarks': ot_remarks,
+                            'remarks': remarks,
+                            'marked_by': request.user
+                        }
+                    )
+                
+                # Send WhatsApp notification for new attendance
+                if created:
+                    send_whatsapp_notification(employee, attendance)
+                
                 count += 1
         
         messages.success(request, f'Attendance marked for {count} employees')
@@ -228,6 +329,10 @@ def attendance_list(request):
     if request.user.is_supervisor():
         assigned_employees = request.user.get_assigned_employees()
         attendance_records = attendance_records.filter(employee__in=assigned_employees)
+    # Filter by admin's assigned companies
+    elif request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        attendance_records = attendance_records.filter(employee__company__in=admin_companies)
     
     # Apply filters
     if start_date:
@@ -248,6 +353,10 @@ def attendance_list(request):
     if request.user.is_supervisor():
         employees = request.user.get_assigned_employees()
         companies = request.user.assigned_companies.all()
+    elif request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        employees = Employee.objects.filter(is_active=True, company__in=admin_companies)
+        companies = admin_companies
     else:
         employees = Employee.objects.filter(is_active=True)
         companies = Company.objects.all()
@@ -289,6 +398,11 @@ def reports(request):
         date__lte=to_date
     ).order_by('employee', 'date')
     
+    # Filter by admin's assigned companies
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        attendance_records = attendance_records.filter(employee__company__in=admin_companies)
+    
     # Apply filters
     if company_id:
         attendance_records = attendance_records.filter(employee__company_id=company_id)
@@ -322,9 +436,14 @@ def reports(request):
     absent_count = attendance_records.filter(status='ABSENT').count()
     ot_count = attendance_records.filter(has_ot=True).count()
     
-    # Get data for filters
-    companies = Company.objects.all()
-    employees = Employee.objects.filter(is_active=True)
+    # Get data for filters - respect admin company mapping
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        companies = admin_companies
+        employees = Employee.objects.filter(is_active=True, company__in=admin_companies)
+    else:
+        companies = Company.objects.all()
+        employees = Employee.objects.filter(is_active=True)
     
     context = {
         'report_data': report_data,
@@ -430,8 +549,14 @@ def employee_wise_report(request):
     company_id = request.GET.get('company', '')
     min_allowed_date = get_min_allowed_date().strftime('%Y-%m-%d')
     
-    # Get employees
+    # Get employees - respect admin company mapping
     employees = Employee.objects.filter(is_active=True).select_related('company')
+    
+    # Filter by admin's assigned companies
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        admin_companies = request.user.assigned_companies.all()
+        employees = employees.filter(company__in=admin_companies)
+    
     if company_id:
         employees = employees.filter(company_id=company_id)
     
@@ -451,7 +576,8 @@ def employee_wise_report(request):
         present_days = records.filter(status='PRESENT').count()
         absent_days = records.filter(status='ABSENT').count()
         ot_days = records.filter(has_ot=True).count()
-        total_ot_hours = sum([r.ot_hours for r in records.filter(has_ot=True)])
+        # Handle None values for ot_hours
+        total_ot_hours = sum([r.ot_hours or Decimal('0.00') for r in records.filter(has_ot=True)])
         
         total_salary = present_days * emp.salary_per_day
         total_ot_amount = total_ot_hours * emp.ot_per_hour
@@ -472,7 +598,11 @@ def employee_wise_report(request):
         grand_total_ot += total_ot_amount
         grand_total += total_amount
     
-    companies = Company.objects.all()
+    # Get companies for filter dropdown - respect admin company mapping
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        companies = request.user.assigned_companies.all()
+    else:
+        companies = Company.objects.all()
     
     context = {
         'employee_summary': employee_summary,
@@ -486,3 +616,58 @@ def employee_wise_report(request):
         'selected_company': company_id,
     }
     return render(request, 'attendance/employee_wise_report.html', context)
+
+
+@login_required
+def edit_attendance(request, pk):
+    """Edit attendance record - Super Admin only"""
+    # Only Super Admin can edit attendance
+    if not request.user.is_superadmin():
+        messages.error(request, "Only Super Admin can edit attendance records.")
+        return redirect('attendance:attendance_list')
+    
+    attendance = get_object_or_404(Attendance, pk=pk)
+    
+    if request.method == 'POST':
+        # Get form data
+        status = request.POST.get('status')
+        has_ot = request.POST.get('has_ot') == 'on'
+        ot_hours = request.POST.get('ot_hours', '')
+        ot_remarks = request.POST.get('ot_remarks', '')
+        remarks = request.POST.get('remarks', '')
+        
+        # Update attendance
+        attendance.status = status
+        attendance.has_ot = has_ot
+        attendance.ot_hours = Decimal(ot_hours) if ot_hours and has_ot else None
+        attendance.ot_remarks = ot_remarks if has_ot else None
+        attendance.remarks = remarks
+        attendance.is_edited = True
+        attendance.edited_by = request.user
+        attendance.edited_at = datetime.now()
+        attendance.save()
+        
+        messages.success(request, f'Attendance record updated for {attendance.employee.get_full_name()}')
+        return redirect('attendance:attendance_list')
+    
+    context = {
+        'attendance': attendance,
+    }
+    return render(request, 'attendance/edit_attendance.html', context)
+
+
+@login_required
+def delete_attendance(request, pk):
+    """Delete attendance record - Super Admin only"""
+    # Only Super Admin can delete attendance
+    if not request.user.is_superadmin():
+        messages.error(request, "Only Super Admin can delete attendance records.")
+        return redirect('attendance:attendance_list')
+    
+    attendance = get_object_or_404(Attendance, pk=pk)
+    employee_name = attendance.employee.get_full_name()
+    attendance_date = attendance.date
+    
+    attendance.delete()
+    messages.success(request, f'Attendance record for {employee_name} on {attendance_date} has been deleted.')
+    return redirect('attendance:attendance_list')

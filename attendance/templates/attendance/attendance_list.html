@@ -24,7 +24,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Company</label>
-                    <select name="company" class="form-select">
+                    <select name="company" id="company-select" class="form-select">
                         <option value="">All Companies</option>
                         {% for company in companies %}
                         <option value="{{ company.id }}" {% if selected_company == company.id|stringformat:"s" %}selected{% endif %}>
@@ -35,10 +35,10 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Employee</label>
-                    <select name="employee" class="form-select">
+                    <select name="employee" id="employee-select" class="form-select">
                         <option value="">All Employees</option>
                         {% for employee in employees %}
-                        <option value="{{ employee.id }}" {% if selected_employee == employee.id|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ employee.id }}" data-company="{{ employee.company_id }}" {% if selected_employee == employee.id|stringformat:"s" %}selected{% endif %}>
                             {{ employee.get_full_name }} ({{ employee.employee_code }})
                         </option>
                         {% endfor %}
@@ -74,6 +74,9 @@
                             <th>Remarks</th>
                             <th>Marked By</th>
                             <th>Time</th>
+                            {% if request.user.is_superadmin %}
+                            <th class="text-center">Actions</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -86,6 +89,8 @@
                             <td>
                                 {% if record.status == 'PRESENT' %}
                                 <span class="badge bg-success">Present</span>
+                                {% elif record.status == 'HALF_DAY' %}
+                                <span class="badge bg-warning">Half Day</span>
                                 {% else %}
                                 <span class="badge bg-danger">Absent</span>
                                 {% endif %}
@@ -101,6 +106,16 @@
                             <td><small>{{ record.remarks|default:"-"|truncatewords:5 }}</small></td>
                             <td><small>{{ record.marked_by.get_full_name|default:record.marked_by.username }}</small></td>
                             <td><small class="text-muted">{{ record.marked_at|date:"h:i A" }}</small></td>
+                            {% if request.user.is_superadmin %}
+                            <td class="text-center">
+                                <a href="{% url 'attendance:edit_attendance' record.pk %}" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'attendance:delete_attendance' record.pk %}" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this attendance record?');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -115,4 +130,52 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const companySelect = document.getElementById('company-select');
+    const employeeSelect = document.getElementById('employee-select');
+    
+    // Store all employee options
+    const allEmployeeOptions = Array.from(employeeSelect.options).map(option => ({
+        value: option.value,
+        text: option.text,
+        companyId: option.dataset.company || ''
+    }));
+    
+    // Filter employees based on company selection
+    function filterEmployees() {
+        const selectedCompany = companySelect.value;
+        const currentEmployee = employeeSelect.value;
+        
+        // Clear employee select
+        employeeSelect.innerHTML = '<option value="">All Employees</option>';
+        
+        // Add filtered options
+        allEmployeeOptions.forEach(option => {
+            if (option.value === '') return; // Skip "All Employees" option
+            
+            // Show all if no company selected, or filter by company
+            if (!selectedCompany || option.companyId === selectedCompany) {
+                const newOption = document.createElement('option');
+                newOption.value = option.value;
+                newOption.text = option.text;
+                newOption.dataset.company = option.companyId;
+                if (option.value === currentEmployee) {
+                    newOption.selected = true;
+                }
+                employeeSelect.appendChild(newOption);
+            }
+        });
+    }
+    
+    // Run on company change
+    companySelect.addEventListener('change', filterEmployees);
+    
+    // Initialize on page load
+    filterEmployees();
+});
+</script>
 {% endblock %}

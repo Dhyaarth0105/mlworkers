@@ -64,6 +64,7 @@
                                 <th style="width: 120px;">Status</th>
                                 <th style="width: 80px;" class="text-center">OT?</th>
                                 <th style="width: 100px;">OT Hours</th>
+                                <th style="width: 150px;">OT Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -80,6 +81,7 @@
                                     <select name="status_{{ employee.id }}" class="form-select form-select-sm status-select" data-employee="{{ employee.id }}">
                                         <option value="">--</option>
                                         <option value="PRESENT" {% if att and att.status == 'PRESENT' %}selected{% endif %}>Present</option>
+                                        <option value="HALF_DAY" {% if att and att.status == 'HALF_DAY' %}selected{% endif %}>Half Day</option>
                                         <option value="ABSENT" {% if att and att.status == 'ABSENT' %}selected{% endif %}>Absent</option>
                                     </select>
                                 </td>
@@ -99,8 +101,17 @@
                                            data-employee="{{ employee.id }}"
                                            step="0.5" 
                                            min="0" 
-                                           placeholder="0"
-                                           value="{% if att and att.has_ot %}{{ att.ot_hours }}{% endif %}"
+                                           placeholder="Enter hours"
+                                           value="{% if att and att.has_ot and att.ot_hours %}{{ att.ot_hours }}{% endif %}"
+                                           {% if not att or not att.has_ot %}disabled{% endif %}>
+                                </td>
+                                <td>
+                                    <input type="text" 
+                                           name="ot_remarks_{{ employee.id }}" 
+                                           class="form-control form-control-sm ot-remarks" 
+                                           data-employee="{{ employee.id }}"
+                                           placeholder="OT reason"
+                                           value="{% if att %}{{ att.ot_remarks|default:'' }}{% endif %}"
                                            {% if not att or not att.has_ot %}disabled{% endif %}>
                                 </td>
                             </tr>
@@ -115,6 +126,9 @@
                     <div>
                         <button type="button" class="btn btn-outline-success btn-sm" onclick="markAllPresent()">
                             <i class="bi bi-check-all"></i> Mark All Present
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="markAllHalfDay()">
+                            <i class="bi bi-clock-history"></i> Mark All Half Day
                         </button>
                         <button type="button" class="btn btn-outline-danger btn-sm" onclick="markAllAbsent()">
                             <i class="bi bi-x-circle"></i> Mark All Absent
@@ -141,14 +155,47 @@
 
 {% block extra_js %}
 <script>
-// Enable/disable OT hours based on checkbox
+// Function to toggle OT fields based on status
+function toggleOTForEmployee(employeeId, status) {
+    const otCheckbox = document.querySelector(`.ot-checkbox[data-employee="${employeeId}"]`);
+    const otHoursInput = document.querySelector(`.ot-hours[data-employee="${employeeId}"]`);
+    const otRemarksInput = document.querySelector(`.ot-remarks[data-employee="${employeeId}"]`);
+    
+    // OT only available for PRESENT and HALF_DAY, not for ABSENT
+    if (status === 'PRESENT' || status === 'HALF_DAY') {
+        otCheckbox.disabled = false;
+    } else {
+        // Disable and reset OT for ABSENT
+        otCheckbox.disabled = true;
+        otCheckbox.checked = false;
+        otHoursInput.disabled = true;
+        otHoursInput.value = '';
+        otRemarksInput.disabled = true;
+        otRemarksInput.value = '';
+    }
+}
+
+// Status change listener - toggle OT availability
+document.querySelectorAll('.status-select').forEach(function(select) {
+    select.addEventListener('change', function() {
+        const employeeId = this.dataset.employee;
+        toggleOTForEmployee(employeeId, this.value);
+    });
+    // Initialize on page load
+    toggleOTForEmployee(select.dataset.employee, select.value);
+});
+
+// Enable/disable OT hours and remarks based on checkbox
 document.querySelectorAll('.ot-checkbox').forEach(function(checkbox) {
     checkbox.addEventListener('change', function() {
         const employeeId = this.dataset.employee;
         const otHoursInput = document.querySelector(`.ot-hours[data-employee="${employeeId}"]`);
+        const otRemarksInput = document.querySelector(`.ot-remarks[data-employee="${employeeId}"]`);
         otHoursInput.disabled = !this.checked;
+        otRemarksInput.disabled = !this.checked;
         if (!this.checked) {
             otHoursInput.value = '';
+            otRemarksInput.value = '';
         }
     });
 });
@@ -156,18 +203,21 @@ document.querySelectorAll('.ot-checkbox').forEach(function(checkbox) {
 function markAllPresent() {
     document.querySelectorAll('.status-select').forEach(function(select) {
         select.value = 'PRESENT';
+        toggleOTForEmployee(select.dataset.employee, 'PRESENT');
     });
 }
 
 function markAllAbsent() {
     document.querySelectorAll('.status-select').forEach(function(select) {
         select.value = 'ABSENT';
+        toggleOTForEmployee(select.dataset.employee, 'ABSENT');
     });
-    // Uncheck all OT checkboxes
-    document.querySelectorAll('.ot-checkbox').forEach(function(checkbox) {
-        checkbox.checked = false;
-        const employeeId = checkbox.dataset.employee;
-        document.querySelector(`.ot-hours[data-employee="${employeeId}"]`).disabled = true;
+}
+
+function markAllHalfDay() {
+    document.querySelectorAll('.status-select').forEach(function(select) {
+        select.value = 'HALF_DAY';
+        toggleOTForEmployee(select.dataset.employee, 'HALF_DAY');
     });
 }
 </script>

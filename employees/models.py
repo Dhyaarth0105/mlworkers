@@ -19,17 +19,19 @@ class Employee(models.Model):
     email = models.EmailField(blank=True, null=True)
     date_of_joining = models.DateField()
     
-    # Salary fields
+    # Salary fields - no default, user must enter value
     salary_per_day = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        default=Decimal('0.00'),
+        null=True,
+        blank=True,
         help_text="Daily salary amount"
     )
     ot_per_hour = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        default=Decimal('0.00'),
+        null=True,
+        blank=True,
         help_text="Overtime rate per hour"
     )
     

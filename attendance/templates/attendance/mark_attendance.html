@@ -12,7 +12,7 @@
     </div>
 
     <div class="row">
-        <div class="col-md-5">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Mark Attendance</h5>
@@ -23,7 +23,7 @@
             </div>
         </div>
 
-        <div class="col-md-7">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">Today's Attendance ({{ today_attendance.count }})</h5>
@@ -36,7 +36,7 @@
                                 <tr>
                                     <th>Employee</th>
                                     <th>Status</th>
-                                    <th>OT Hours</th>
+                                    <th>OT</th>
                                     <th>Time</th>
                                 </tr>
                             </thead>
@@ -49,11 +49,19 @@
                                         <span class="badge bg-success">{{ record.get_status_display }}</span>
                                         {% elif record.status == 'ABSENT' %}
                                         <span class="badge bg-danger">{{ record.get_status_display }}</span>
+                                        {% elif record.status == 'HALF_DAY' %}
+                                        <span class="badge bg-warning">{{ record.get_status_display }}</span>
                                         {% else %}
                                         <span class="badge bg-info">{{ record.get_status_display }}</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ record.ot_hours|default:"-" }}</td>
+                                    <td>
+                                        {% if record.has_ot and record.ot_hours %}
+                                        {{ record.ot_hours }} hrs
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
                                     <td><small>{{ record.marked_at|date:"h:i A" }}</small></td>
                                 </tr>
                                 {% endfor %}
@@ -68,4 +76,38 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('id_status');
+    const otSection = document.getElementById('ot-section');
+    const hasOtCheckbox = document.getElementById('id_has_ot');
+    const otHoursInput = document.getElementById('id_ot_hours');
+    const otRemarksInput = document.getElementById('id_ot_remarks');
+    
+    function toggleOTSection() {
+        const status = statusSelect.value;
+        // Show OT section only for PRESENT and HALF_DAY
+        if (status === 'PRESENT' || status === 'HALF_DAY') {
+            otSection.style.display = 'block';
+        } else {
+            // Hide and reset OT fields for ABSENT
+            otSection.style.display = 'none';
+            if (hasOtCheckbox) hasOtCheckbox.checked = false;
+            if (otHoursInput) otHoursInput.value = '';
+            if (otRemarksInput) otRemarksInput.value = '';
+        }
+    }
+    
+    // Run on page load
+    toggleOTSection();
+    
+    // Run on status change
+    if (statusSelect) {
+        statusSelect.addEventListener('change', toggleOTSection);
+    }
+});
+</script>
 {% endblock %}

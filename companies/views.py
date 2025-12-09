@@ -12,6 +12,10 @@ def company_list(request):
     query = request.GET.get('q', '')
     companies = Company.objects.all()
     
+    # If admin is mapped to specific companies, only show those companies
+    if request.user.role == 'ADMIN' and request.user.assigned_companies.exists():
+        companies = request.user.assigned_companies.all()
+    
     if query:
         companies = companies.filter(
             Q(name__icontains=query) |

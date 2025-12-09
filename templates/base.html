@@ -28,7 +28,41 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    {% if user.is_admin %}
+                    {% if user.is_superadmin %}
+                    <!-- SUPER ADMIN: Full access including attendance marking -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:user_list' %}">
+                            <i class="bi bi-person-gear"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'companies:company_list' %}">
+                            <i class="bi bi-building"></i> Companies
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'employees:employee_list' %}">
+                            <i class="bi bi-people"></i> Employees
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-calendar-check"></i> Attendance
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'attendance:bulk_mark_attendance' %}"><i class="bi bi-list-check me-2"></i>Mark Attendance</a></li>
+                            <li><a class="dropdown-item" href="{% url 'attendance:attendance_list' %}"><i class="bi bi-table me-2"></i>View Records</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'attendance:reports' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reports</a></li>
+                        </ul>
+                    </li>
+                    {% elif user.is_admin %}
+                    <!-- ADMIN: No attendance marking, only view records -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'accounts:admin_dashboard' %}">
                             <i class="bi bi-speedometer2"></i> Dashboard
@@ -50,11 +84,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'attendance:reports' %}">
-                            <i class="bi bi-file-earmark-bar-graph"></i> Reports
+                        <a class="nav-link" href="{% url 'attendance:attendance_list' %}">
+                            <i class="bi bi-table"></i> View Records
                         </a>
                     </li>
                     {% else %}
+                    <!-- SUPERVISOR: Attendance marking only -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'accounts:supervisor_dashboard' %}">
                             <i class="bi bi-speedometer2"></i> Dashboard
