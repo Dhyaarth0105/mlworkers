@@ -255,6 +255,8 @@ def admin_dashboard(request):
     from django.db.models import Count, Q
     from datetime import date
     
+    today = date.today()
+    
     # Check if admin is mapped to specific companies
     admin_has_company_mapping = request.user.role == 'ADMIN' and request.user.assigned_companies.exists()
     
@@ -262,7 +264,20 @@ def admin_dashboard(request):
         admin_companies = request.user.assigned_companies.all()
         total_companies = admin_companies.count()
         total_employees = Employee.objects.filter(is_active=True, company__in=admin_companies).count()
-        today_attendance = Attendance.objects.filter(date=date.today(), employee__company__in=admin_companies).count()
+        
+        # Today's attendance stats
+        today_attendance_qs = Attendance.objects.filter(date=today, employee__company__in=admin_companies)
+        today_attendance = today_attendance_qs.count()
+        present_today = today_attendance_qs.filter(Q(status='PRESENT') | Q(status='HALF_DAY')).count()
+        absent_today = today_attendance_qs.filter(status='ABSENT').count()
+        ot_today = today_attendance_qs.filter(has_ot=True).count()
+        
+        # Total supervisors for these companies
+        total_supervisors = User.objects.filter(
+            role='SUPERVISOR', 
+            is_active=True,
+            assigned_companies__in=admin_companies
+        ).distinct().count()
         
         # Recent companies - only admin's companies
         recent_companies = admin_companies.only(
@@ -278,7 +293,16 @@ def admin_dashboard(request):
         # Super Admin or Admin with no mapping sees all
         total_companies = Company.objects.count()
         total_employees = Employee.objects.filter(is_active=True).count()
-        today_attendance = Attendance.objects.filter(date=date.today()).count()
+        
+        # Today's attendance stats
+        today_attendance_qs = Attendance.objects.filter(date=today)
+        today_attendance = today_attendance_qs.count()
+        present_today = today_attendance_qs.filter(Q(status='PRESENT') | Q(status='HALF_DAY')).count()
+        absent_today = today_attendance_qs.filter(status='ABSENT').count()
+        ot_today = today_attendance_qs.filter(has_ot=True).count()
+        
+        # Total supervisors
+        total_supervisors = User.objects.filter(role='SUPERVISOR', is_active=True).count()
         
         # Recent companies - use only() to fetch only needed fields
         recent_companies = Company.objects.only(
@@ -295,6 +319,10 @@ def admin_dashboard(request):
         'total_companies': total_companies,
         'total_employees': total_employees,
         'today_attendance': today_attendance,
+        'total_supervisors': total_supervisors,
+        'present_today': present_today,
+        'absent_today': absent_today,
+        'ot_today': ot_today,
         'recent_companies': recent_companies,
         'recent_employees': recent_employees,
     }
