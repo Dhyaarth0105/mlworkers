@@ -51,7 +51,11 @@
                                     <td><strong>{{ company.name }}</strong></td>
                                     <td>{{ company.contact_number }}</td>
                                     <td>{{ company.email }}</td>
-                                    <td><span class="badge bg-info">{{ company.get_employee_count }}</span></td>
+                                    <td>
+                                        <a href="{% url 'employees:employee_list' %}?company={{ company.id }}" class="badge bg-info text-decoration-none" title="Click to view employees">
+                                            {{ company.get_employee_count }}
+                                        </a>
+                                    </td>
                                     <td>{{ company.created_at|date:"M d, Y" }}</td>
                                     <td>
                                         <a href="{% url 'companies:company_detail' company.pk %}"

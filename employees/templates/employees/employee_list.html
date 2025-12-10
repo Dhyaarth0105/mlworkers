@@ -16,33 +16,35 @@
     </div>
 
     <!-- Filters -->
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <form method="get" class="input-group">
-                <input type="text" name="q" class="form-control" placeholder="Search employees..." value="{{ query }}">
-                <button class="btn btn-outline-secondary" type="submit">
-                    <i class="bi bi-search"></i>
-                </button>
-            </form>
+    <form method="get" id="filter-form">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search employees..." value="{{ query }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="company" class="form-select" onchange="document.getElementById('filter-form').submit()">
+                    <option value="">All Companies</option>
+                    {% for company in companies %}
+                    <option value="{{ company.id }}" {% if selected_company == company.id|stringformat:"s" %}selected{% endif %}>
+                        {{ company.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select" onchange="document.getElementById('filter-form').submit()">
+                    <option value="">All Status</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
         </div>
-        <div class="col-md-3">
-            <select name="company" class="form-select" onchange="this.form.submit()">
-                <option value="">All Companies</option>
-                {% for company in companies %}
-                <option value="{{ company.id }}" {% if selected_company == company.id|stringformat:"s" %}selected{% endif %}>
-                    {{ company.name }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select name="status" class="form-select" onchange="this.form.submit()">
-                <option value="">All Status</option>
-                <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
-                <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
-            </select>
-        </div>
-    </div>
+    </form>
 
     <!-- Employees List -->
     <div class="row">

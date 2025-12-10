@@ -227,14 +227,13 @@ class UserManagementForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'mobile', 'whatsapp_number', 'role', 'assigned_companies', 'allowed_past_date', 'is_active']
+        fields = ['username', 'first_name', 'last_name', 'email', 'mobile', 'role', 'assigned_companies', 'allowed_past_date', 'is_active']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
             'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mobile Number'}),
-            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'WhatsApp Number (with country code)'}),
             'role': forms.Select(attrs={'class': 'form-control'}),
             'assigned_companies': forms.SelectMultiple(attrs={
                 'class': 'form-control',
@@ -254,8 +253,6 @@ class UserManagementForm(forms.ModelForm):
         self.fields['assigned_companies'].help_text = 'REQUIRED: Select at least 1 company. Hold Ctrl/Cmd to select multiple.'
         self.fields['allowed_past_date'].required = False
         self.fields['allowed_past_date'].help_text = 'Allow supervisor to mark attendance for this specific past date (optional)'
-        self.fields['whatsapp_number'].required = False
-        self.fields['whatsapp_number'].help_text = 'For attendance notifications (e.g., +919876543210)'
         
         # Make password required for new users
         if not self.instance.pk:

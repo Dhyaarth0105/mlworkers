@@ -16,6 +16,12 @@ class Employee(models.Model):
     )
     designation = models.CharField(max_length=100)
     contact_number = models.CharField(max_length=20)
+    whatsapp_number = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        help_text="WhatsApp number for attendance notifications (e.g., +919876543210)"
+    )
     email = models.EmailField(blank=True, null=True)
     date_of_joining = models.DateField()
     

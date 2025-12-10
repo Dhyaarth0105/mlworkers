@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 def send_whatsapp_notification(employee, attendance):
     """Send WhatsApp notification to employee about their attendance"""
     try:
-        # Get employee's WhatsApp number (from contact_number field)
-        whatsapp_number = employee.contact_number
+        # Get employee's WhatsApp number (use whatsapp_number field, fallback to contact_number)
+        whatsapp_number = employee.whatsapp_number or employee.contact_number
         if not whatsapp_number:
             return False
         

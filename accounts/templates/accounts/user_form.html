@@ -62,19 +62,11 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label class="form-label">Mobile</label>
                                 {{ form.mobile }}
                                 {% if form.mobile.errors %}
                                 <div class="text-danger small">{{ form.mobile.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">WhatsApp Number</label>
-                                {{ form.whatsapp_number }}
-                                <small class="text-muted d-block">For attendance notifications (e.g., +919876543210)</small>
-                                {% if form.whatsapp_number.errors %}
-                                <div class="text-danger small">{{ form.whatsapp_number.errors.0 }}</div>
                                 {% endif %}
                             </div>
                         </div>

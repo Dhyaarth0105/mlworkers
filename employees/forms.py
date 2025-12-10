@@ -10,7 +10,7 @@ class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = ['employee_code', 'first_name', 'last_name', 'company', 
-                  'designation', 'contact_number', 'email', 'date_of_joining',
+                  'designation', 'contact_number', 'whatsapp_number', 'email', 'date_of_joining',
                   'salary_per_day', 'ot_per_hour', 'uan_number', 'gatepass_number', 'is_active']
         widgets = {
             'employee_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Employee Code'}),
@@ -19,6 +19,7 @@ class EmployeeForm(forms.ModelForm):
             'company': forms.Select(attrs={'class': 'form-control'}),
             'designation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Designation'}),
             'contact_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact Number'}),
+            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'WhatsApp Number (e.g., +919876543210)'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email (Optional)'}),
             'date_of_joining': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'salary_per_day': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter salary per day', 'step': '0.01', 'min': '0'}),
@@ -46,8 +47,9 @@ class EmployeeForm(forms.ModelForm):
                 Column(Field('date_of_joining'), css_class='col-md-6'),
             ),
             Row(
-                Column(Field('contact_number'), css_class='col-md-6'),
-                Column(Field('email'), css_class='col-md-6'),
+                Column(Field('contact_number'), css_class='col-md-4'),
+                Column(Field('whatsapp_number'), css_class='col-md-4'),
+                Column(Field('email'), css_class='col-md-4'),
             ),
             HTML('<hr class="my-4"><h5 class="mb-3"><i class="bi bi-currency-rupee"></i> Salary Details</h5>'),
             Row(
