@@ -10,6 +10,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Flatpickr CSS for better date picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     
@@ -157,8 +160,25 @@
     </footer>
     {% endif %}
     
+    <!-- jQuery (required for Select2) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Flatpickr JS for better date picker -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Initialize Flatpickr on all date inputs globally
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr('input[type="date"]', {
+                dateFormat: 'Y-m-d',  // Format sent to server (Django format)
+                allowInput: true,
+                altInput: true,
+                altFormat: 'd-m-Y',   // Format shown to user (DD-MM-YYYY)
+                disableMobile: true,
+                clickOpens: true
+            });
+        });
+    </script>
     <!-- Custom JS -->
     <script src="{% static 'js/custom.js' %}"></script>
     

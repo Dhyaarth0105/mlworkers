@@ -2,6 +2,7 @@
 Django settings for attendance_project project.
 """
 
+import os
 from pathlib import Path
 from decouple import config
 
