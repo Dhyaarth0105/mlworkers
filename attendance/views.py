@@ -433,6 +433,7 @@ def reports(request):
     
     # Calculate summary statistics
     present_count = attendance_records.filter(status='PRESENT').count()
+    half_day_count = attendance_records.filter(status='HALF_DAY').count()
     absent_count = attendance_records.filter(status='ABSENT').count()
     ot_count = attendance_records.filter(has_ot=True).count()
     
@@ -451,6 +452,7 @@ def reports(request):
         'total_ot': total_ot,
         'total_grand': total_grand,
         'present_count': present_count,
+        'half_day_count': half_day_count,
         'absent_count': absent_count,
         'ot_count': ot_count,
         'total_records': len(report_data),

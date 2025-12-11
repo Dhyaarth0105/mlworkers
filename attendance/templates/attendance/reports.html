@@ -63,7 +63,7 @@
 
     <!-- Summary Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <h6 class="card-title">Total Records</h6>
@@ -71,7 +71,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h6 class="card-title">Present Days</h6>
@@ -79,7 +79,15 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title">Half Day</h6>
+                    <h2 class="mb-0">{{ half_day_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body">
                     <h6 class="card-title">Absent Days</h6>
@@ -130,10 +138,11 @@
                         <tr>
                             <th>Date</th>
                             <th>Employee</th>
-                            <th>Code</th>
+                            <th>Designation</th>
                             <th>Company</th>
                             <th>Status</th>
                             <th>OT</th>
+                            <th>OT Hours</th>
                             <th class="text-end">Day Rate</th>
                             <th class="text-end">Day Salary</th>
                             <th class="text-end">OT Rate</th>
@@ -146,11 +155,13 @@
                         <tr>
                             <td>{{ item.record.date|date:"d M Y" }}</td>
                             <td><strong>{{ item.record.employee.get_full_name }}</strong></td>
-                            <td><small>{{ item.record.employee.employee_code }}</small></td>
+                            <td><small>{{ item.record.employee.designation }}</small></td>
                             <td>{{ item.record.employee.company.name }}</td>
                             <td>
                                 {% if item.record.status == 'PRESENT' %}
                                 <span class="badge bg-success">Present</span>
+                                {% elif item.record.status == 'HALF_DAY' %}
+                                <span class="badge bg-warning">Half Day</span>
                                 {% else %}
                                 <span class="badge bg-danger">Absent</span>
                                 {% endif %}
@@ -162,9 +173,16 @@
                                 <span class="text-muted">No</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end">₹{{ item.record.employee.salary_per_day }}</td>
+                            <td>
+                                {% if item.record.has_ot and item.record.ot_hours %}
+                                {{ item.record.ot_hours }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">₹{{ item.record.employee.salary_per_day|default:"0.00" }}</td>
                             <td class="text-end text-success fw-bold">₹{{ item.day_salary|floatformat:2 }}</td>
-                            <td class="text-end">₹{{ item.record.employee.ot_per_hour }}/hr</td>
+                            <td class="text-end">₹{{ item.record.employee.ot_per_hour|default:"0.00" }}/hr</td>
                             <td class="text-end text-info fw-bold">₹{{ item.ot_amount|floatformat:2 }}</td>
                             <td class="text-end text-primary fw-bold">₹{{ item.total_amount|floatformat:2 }}</td>
                         </tr>
@@ -172,7 +190,7 @@
                     </tbody>
                     <tfoot class="table-light fw-bold">
                         <tr>
-                            <td colspan="7" class="text-end">TOTALS:</td>
+                            <td colspan="8" class="text-end">TOTALS:</td>
                             <td class="text-end text-success">₹{{ total_salary|floatformat:2 }}</td>
                             <td></td>
                             <td class="text-end text-info">₹{{ total_ot|floatformat:2 }}</td>
